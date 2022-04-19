@@ -1,0 +1,52 @@
+glucogeno = function(x,xx,circular=FALSE){
+  b <-1
+  xx = xx+1
+  a <-2
+  d <-1
+  control = c()
+  x = x+1
+  c <- c()
+  peta <- 1
+  while (a < x) {
+    b = b+1
+    c <- c(c,a,b)
+    a = a+1
+  }
+  c = c(1,c)
+  b <- c [-length(c)]
+  while (peta < xx) {
+    peta = peta+1
+    for (n in unique(b)) {
+      if((n%%4 == 0) & (length(which(control == n)) == 0)){
+        bb <- b[length(b)]
+        aa <- b[length(b)]+1
+        b <- c(b,n)
+        w <-1
+        while(w <= 10){
+          bb = bb+1
+          b <- c(b,aa,bb)
+          aa = aa+1
+          w = w+1
+        }
+        if (b[length(b)] > 13) {b = b[-length(b)]}
+        control = c(control,n)
+      }
+    }
+  }
+  vector <- graph(edges = b, n=1, directed = T)
+  threshold <- 1
+nn = Filter(function (elem) length(which(b == elem)) <= threshold, b)
+for (n in unique(b)) {
+  V(vector)[n]$color <- "orange"
+}
+for (n in nn) {
+  V(vector)[n]$color <- "red"
+}
+  if(circular){
+    layout <- layout.reingold.tilford(vector, circular=T)
+    plot(vector, vertex.size=5, vertex.label=NA, frame=FALSE, edge.curved=.2, edge.arrow.size=0, vertex.label.degree=0, layout=layout)
+  }else
+  {plot(vector, vertex.size=5, vertex.label=NA, frame=FALSE, edge.curved=.2, edge.arrow.size=0, vertex.label.degree=0)}
+  jj <<- b
+  return(vector)
+}

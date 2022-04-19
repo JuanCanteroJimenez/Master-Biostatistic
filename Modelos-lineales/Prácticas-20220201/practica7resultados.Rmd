@@ -1,0 +1,72 @@
+---
+title: "Practica 7"
+author: "Juan Cantero Jimenez"
+date: "2/21/2022"
+output: pdf_document
+---
+
+```{r}
+library(ISLR)
+data(Auto)
+```
+
+```{r}
+pairs(Auto)
+```
+
+```{r}
+head(Auto)
+Auto_num <- Auto[,-9]
+Auto_num$ihorsepower <- 1/Auto_num$horsepower
+Auto_num$idisplacement <- 1/Auto_num$displacement
+Auto_num$iweight <- 1/Auto_num$weight
+Auto_num$origin <- factor(Auto_num$origin)
+
+```  
+
+```{r}
+pairs(Auto_num)
+```
+```{r}
+modelos<-leaps::regsubsets(mpg ~ ., data=Auto_num, nvmax=12)
+sum.modelos <- summary(modelos)
+sum.modelos
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(1:11, sum.modelos$adjr2, xlab="Variables", main="Coef. Det. Ajustado", type="b")
+abline(v = which.max(sum.modelos$adjr2), col=2)
+plot(1:11, sum.modelos$cp, xlab="Variables", main="Cp de mallow", type="b")
+abline(v = which.min(sum.modelos$cp), col=2)
+plot(1:11, sum.modelos$bic, xlab="Variables", main="Bic", type="b")
+abline(v = which.min(sum.modelos$bic), col=2)
+```
+
+
+```{r}
+modelos2<-leaps::regsubsets(mpg ~ ., data=Auto_num, nvmax=12, method="forward")
+sum.modelos2 <- summary(modelos2)
+sum.modelos2
+par(mfrow=c(1,3))
+plot(1:11, sum.modelos2$adjr2, xlab="Variables", main="Coef. Det. Ajustado", type="b")
+abline(v = which.max(sum.modelos2$adjr2), col=2)
+plot(1:11, sum.modelos2$cp, xlab="Variables", main="Cp de mallow", type="b")
+abline(v = which.min(sum.modelos2$cp), col=2)
+plot(1:11, sum.modelos2$bic, xlab="Variables", main="Bic", type="b")
+abline(v = which.min(sum.modelos2$bic), col=2)
+```
+
+```{r}
+modelos3 <- leaps::regsubsets(mpg ~ (cylinders + horsepower + acceleration + year + ihorsepower + iweight ) * origin + origin, data=Auto_num, nvmax=50)
+sum.modelos3<-summary(modelos3)
+sum.modelos3
+par(mfrow=c(1,3))
+plot(1:20, sum.modelos3$adjr2, xlab="Variables", main="Coef. Det. Ajustado", type="b")
+abline(v = which.max(sum.modelos3$adjr2), col=2)
+plot(1:20, sum.modelos3$cp, xlab="Variables", main="Cp de mallow", type="b")
+abline(v = which.min(sum.modelos3$cp), col=2)
+plot(1:20, sum.modelos3$bic, xlab="Variables", main="Bic", type="b")
+abline(v = which.min(sum.modelos3$bic), col=2)
+```
+

@@ -1,0 +1,66 @@
+---
+title: "Entregable sesión 3"
+author: "Juan Cantero Jimenez"
+date: "2/9/2022"
+output: pdf_document
+---
+
+## Lectura de los datos
+
+```{r}
+data <- as.data.frame(matrix(c(3.25, 4, 11.47,
+                               3.25, 4, 9.31,
+                               3.75, 4, 13.25,
+                               3.75, 4, 13.49,
+                               4.25, 4, 10.75,
+                               4.25, 4, 10.84,
+                               3.25, 5, 17.79,
+                               3.25, 5, 17.13,
+                               3.75, 5, 16.69, 
+                               3.75, 5, 14.67,
+                               4.25, 5, 16.74, 
+                               4.25, 5, 14.24, 
+                               3.25, 6, 15.17,
+                               3.25, 6, 16.50,
+                               3.75, 6, 10.52, 
+                               3.75, 6, 18.35,
+                               4.25, 6, 18.88,
+                               4.25, 6, 16.99), byrow=TRUE,nrow=18, ncol=3))
+colnames(data) <- c("Ancho","Largo","Tiempo")
+data$Ancho <- as.factor(data$Ancho)
+data$Largo <- as.factor(data$Largo)
+```
+
+## Analisis de los datos
+
+Primero se comprobará la igualdad de efectos de los factores (hipótesis nula), incluyendo la interacción de estos, frente a la hipótesis alternativa de que los efectos de todos los grupos no sea igual. 
+
+```{r}
+av <- aov(Tiempo ~ Largo*Ancho, data=data)
+summary(av)
+```  
+Como se puede observar solo el factor largo parece poseer una diferencia significativa en el efecto frente a las demás. Puesto que la interacción de los dos factores no es significativa, se repetirá el análisis solo con los efectos principales.  
+
+```{r}
+av1 <- aov(Tiempo ~ Largo + Ancho, data=data)
+summary(av1)
+```  
+Se puede observar que el efecto del largo sobre la hélice del helicóptero posee un peso significativo sobre la media del tiempo del vuelo, para este experimento en particular.  
+
+A continuación se comprobarán las hipótesis de aplicabilidad del analisis de varianza.
+
+```{r}
+par(mfrow=c(2,2))
+plot(av1)
+par(mfrow=c(1,1))
+```  
+Se considero oportuno considerar a los residuos normales en función del QQ-plot mostrado anteriormente, aunque se pueden encontrar anomalías como la observación número 15. Sobre esta puede considerarse un outlier, véase el plot Residuals vs Leverage en la que aparece cercana a la distancia de Cook's. Parece que la condición de igual varianza entre los distintos grupos  se cumple, véase la diferencia en la dispersión de las nubes de puntos en los plots de Scale-Locatión. De nuevo el residuo de la observación número 15 se encuentra alejada del resto.  
+
+Por último se muestran los parámetros del modelo así como las medias de los grupos.
+
+```{r}
+model.tables(av1)
+model.tables(av1, type="means")
+
+```
+

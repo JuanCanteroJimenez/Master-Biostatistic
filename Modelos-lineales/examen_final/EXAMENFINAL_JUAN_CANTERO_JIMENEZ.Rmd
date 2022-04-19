@@ -1,0 +1,160 @@
+---
+title: "Examen final"
+author: "Juan Cantero Jimenez"
+date: "2/21/2022"
+output: pdf_document
+---
+
+## Ejercicio 1  
+
+```{r}
+load("pesca.Rdata")
+str(pesca)
+```
+
+```{r}
+modelos <- leaps::regsubsets(Mercurio ~ ., data=pesca)
+sum.modelos <-summary(modelos)
+```
+
+```{r}
+par(mfrow=c(1,3))
+plot(1:8, sum.modelos$adjr2, xlab="Variables", main="Coef. Det. Ajustado", type="b")
+abline(v = which.max(sum.modelos$adjr2), col=2)
+plot(1:8, sum.modelos$cp, xlab="Variables", main="Cp de mallow", type="b")
+abline(v = which.min(sum.modelos$cp), col=2)
+plot(1:8, sum.modelos$bic, xlab="Variables", main="Bic", type="b")
+abline(v = which.min(sum.modelos$bic), col=2)
+```
+El modelo con mejor ajuste según BIC es el modelo que contiene dos covariables.  
+
+Si, el resultado habría cambiado si se hubiera escogido como criterio de selección R2 ajustado o Cp de Mallow. Si se hubiera escogido el primero como criterio de selección, se obtendría como óptimo un modelo con 7 covariables, así si se hubiera escogido el critero de Cp de Mallow se obtendría como óptimo un modelo con 4 covariables. Estos modelos son los siguientes:
+
+```{r}
+print("R2 ajustado")
+sum.modelos$which[which.max(sum.modelos$adjr2),]
+print("Cp de Mallow")
+sum.modelos$which[which.min(sum.modelos$cp),]
+print("BIC")
+sum.modelos$which[which.min(sum.modelos$bic),]
+```
+Como se puede observar el número total de variables escogidas no es lo único que cambia entre los modelos óptimos para los distintos parámetros, las variables escogidas tambien cambian. 
+
+Por último ajustamos el modelo optimo para el parámtro BIC:
+
+
+```{r}
+lm1 <- lm(Mercurio ~ PescadoSem + Peso, data = pesca)
+summary(lm1)
+```
+
+## Ejercicio 2  
+
+
+```{r}
+lm2 <- lm(Mercurio ~ PescadoSem + Peso + Grupo:PescadoSem + Grupo:Peso, data=pesca)
+summary(lm2)
+```
+
+```{r}
+anova1 <-anova(lm1, lm2)
+anova1
+```
+En base al test ANOVA realizado entre el modelo optimo encontrado en el ejercicio 1 y este con la interacción de grupos, se puede concluir que no existen diferencias significativas entre ambos. Esto indica que el efecto de la interacción es de poca mágnitudad. 
+
+```{r}
+glm1 <- glm(Mercurio ~ PescadoSem + Peso, data=pesca)
+glm2 <- glm(Mercurio ~ PescadoSem + Peso + Grupo:PescadoSem + Grupo:Peso, data=pesca)
+loocv1 <- boot::cv.glm(pesca, glm1) 
+loocv2 <- boot::cv.glm(pesca, glm2)
+loocv1$delta[2]
+loocv2$delta[2]
+
+
+```  
+
+Si, la respuesta habría cambiado si se hubiera usado el LOOCV, en este caso el modelo más optimo es el que posee la interacción pues la segunda componente de delta es menor para este. 
+
+## Ejercicio 3  
+
+```{r}
+plot(lm1)
+```
+
+Como se puede ver en el qqplot de los residuos, existe una gran desviación sobre la normalidad. Para contrastar esto se decide realizar un test de Kolmogorov Smirnov para comprobar la hipotesis de normalidad:
+
+```{r}
+ks.test(x = rstudent(lm1), y = "pt", df=nrow(pesca)-2-2)
+```  
+
+Como se puede observar la hipotesis nula de normalidad se descarta para estos residuos. Así concluimos que la hipótesis normalidad no se cumple para este modelo. 
+
+Respecto de la hipotesis de linealidad, en el plot anterior de Residual vs Fitted así como en el de Scale-location se puede apreciar cierta tendencia en los residuos. Así se concluye que la hipotesis de linealidad no se cumple para el modelo. 
+
+Por último si atendemos a la hipótesis de homocedasticidad del modelo, si se observa el plot de Residual vs Fitted se podrá observar como la distribución de los puntos no es homogenea. Para contrastar de forma adecuada esta hipótesis se decide realizar un test de Levene:
+
+```{r}
+grupos <- cut(lm1$fitted.values, quantile(lm1$fitted.values, (0:4)/4),
+include.lowest = TRUE)
+lawstat::levene.test(rstandard(lm1), grupos)
+```  
+En base a los resultados obtenidos podemos concluir que el modelo posee un problema de heterocidasticidad. 
+
+El modelo ajustado no es satisfactorio pues, las hipotesis de Normalidad, linealidad y homocedasticidad no se cumplen.
+
+```{r}
+pairs(pesca[, c("Mercurio", "PescadoSem", "Peso")])
+```  
+Una de las explicaciones posibles para la no adecuación del modelo puede ser que las relaciones asumidas como lineales entre las covariables y la variable respuesta no se cumplan realmente. Si se observa el plot anterior se podra observar como la variable Peso y Mercurio parecen tener relación de tipo cuadrático.
+
+
+## Ejercicio 4  
+
+```{r}
+pesca$Mercuriolog <- log(pesca$Mercurio)
+```
+
+```{r}
+lm3 <- lm(Mercuriolog ~ PescadoSem + Peso + PescadoSem:Grupo + Peso:Grupo, data = pesca)
+summary(lm3)
+```
+
+```{r}
+coef(lm3)
+```
+El coeficiente de PescadoSem indica que un aumento en una unidad en esta covariables, aumenta el valor de la variable respueta (Mercuriolog) en 0.625 unidades. De igual forma el coeficiente de la covariable Peso indica que un aumento en una unidad en esta, aumentara la variable respuesta en 0.0303 unidades. El valor del coeficiente de de la interacción entre Grupo e PescadoSem indica que el aumento de una unidad en el PescadoSem para los individuos del grupo pescador produce un descenso en la variable respuesta de 0.62540747 - 0.62752656 =-0.00211909, mientras que para los individuos del grupo control esta seria de 0.6254. De forma análoga un auemento de una unidad en el peso para los individuos del grupo pescador produce ahora un aumento de 0.03033668 + 0.01421636 = 0.04455304 mientras que para los individuos del grupo control esta seria de 0.03033668. 
+
+
+```{r}
+plot(lm3)
+ks.test(x = rstudent(lm3), y = "pt", df=nrow(pesca)-3-2)
+grupos <- cut(lm3$fitted.values, quantile(lm3$fitted.values, (0:4)/4),
+include.lowest = TRUE)
+lawstat::levene.test(rstandard(lm3), grupos)
+
+```
+La hipotesis de normalidad de los residuos no se cumple (vease qqplot así como resultados del test de Kolmogorov Smirnov realizado, p-valor=0.0027), la hipótesis de homocedasticidad  se cumple (vease el test de Levene realizado, p-valor=0.9832) y por último la hipótesis de linealidad tampoco se cumple pues se puede apreciar cierta tendencia en el plot de Scale-location, sin embargo es necesario destacar que esta tendencia se ha reducido con respecto al modelo sin la transformación en la variable respuesta. A la luz de estos resultados sigo sin dar por bueno este modelo, aunque los residuos parecen tener menor tendencia, y la hipótesis de homocedasticidad si se cumple para los residuos del modelo.
+
+
+## Ejercicio 5  
+
+```{r}
+individuo1 <- data.frame(Grupo = as.factor("Control"),
+                         PescadoSem = 5,
+                         Peso = 80)
+individuo2 <- data.frame(Grupo = as.factor("Pescador"),
+                         PescadoSem = 5,
+                         Peso = 80)
+predict(lm3, newdata = individuo1, interval = "confidence")
+predict(lm3, newdata = individuo2, interval = "confidence")
+```
+Puesto que los intervalos de confianza al 95% de ambos valores predichos por el modelo no se solapan entre ellos, se puede considerar estadísticamente significativa la diferencia entre el valor log(Mercurio) para el grupo control y el de pescador. 
+
+```{r}
+predict(lm3, newdata = individuo1, interval = "prediction")
+predict(lm3, newdata = individuo2, interval = "prediction")
+```
+Puesto que los intervalos de predicción para los valores predichos se solapan, en base a estos intervalos de predicción, las diferencias encontradas entre el individuo del grupo pescador y el de control no son estadisticamente significativas. 
+
+En base a estos resultados se puede concluir que no existe diferencias  estadisticamente significativas entre los valores predichos por este modelo, pues aunque los intervalos de confianza no se solapan, estos hacen referencia a la recta de regresión, no a los valores predichos. Por el contrario los intervalos de predicción si se solapan. 
+

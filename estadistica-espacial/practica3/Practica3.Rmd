@@ -1,0 +1,165 @@
+---
+title: "Práctica 3: Exploración de patrones puntuales"
+author: "Antonio López Quílez"
+#geometry: margin=2.5cm
+geometry: "left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm"
+output:
+#  pdf_document: default
+  html_document: default
+header-includes:
+  - \usepackage[spanish]{babel}
+---
+
+```{r setup, include=FALSE}
+  library(knitr)
+  opts_knit$set(root.dir = "./datos/")
+  knitr::opts_chunk$set(fig.width=6, fig.height=4) 
+```
+
+En esta práctica realizaremos un estudio descriptivo de un patrón puntual empleando métodos basados en quadrats y métodos de distancia. En esta práctica utilizaremos las funciones programadas recogidas en el fichero $\texttt{utilpp.r}$ y que pueden ser activadas con el comando $\texttt{source()}$.
+Exploraremos inicialmente 3 patrones puntuales diferentes:
+
+```{r, warning=FALSE, message=FALSE}
+# Lectura de los patrones puntuales
+japanese<-matrix(scan('japanese.d'),ncol=2,byrow=T)
+redwood<-matrix(scan('redwood.d'),ncol=2,byrow=T)
+cells<-matrix(scan('cells.d'),ncol=2,byrow=T)
+```
+
+Los métodos comentados a continuación pueden ser aplicados a cada uno de los ejemplos reasignando el objeto $\texttt{patron}$ con cada uno de ellos sucesivamente.
+
+```{r, warning=FALSE, message=FALSE}
+# Asignación del nombre patron para aplicar el código
+patron<-japanese
+# patron<-redwood
+# patron<-cells
+```
+
+Para realizar la exploración correctamente, es conveniente probar con diferentes valores de los tamaños y las distancias empleadas.
+
+# Conteos por quadrats
+
+La independencia entre las localizaciones de los puntos conduce al concepto de aleatoriedad espacial completa. Las desviaciones con respecto a esta situación pueden darse hacia una mayor regularidad, propiciando la separación de los puntos, o hacia un mayor agrupamiento, creando grupos de puntos muy próximos.
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center"}
+# Cargamos las funciones
+source('utilpp.r')
+# Representación del patrón puntual en una región cuadrada
+par(pty='s')
+plot(patron,pch=20,xlab='x',ylab='y')
+```
+
+## Análisis mediante un grid de quadrats.
+
+Una forma de utilizar los quadrats es realizando una partición de la región de estudio en quadrats de igual área. El test $\chi²$ proporciona una valoración de la hipótesis de aleatoriedad espacial completa.
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center"}
+par(mfrow=c(1,1),pty="s")
+plot(patron,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20)
+# La función dibu.qua() dibuja las líneas de un grid de quadrats (4x4)
+dibu.qua(4,4)
+# La función cuenta.qua() contabiliza cuantos sucesos hay en cada quadrat
+nump.qua<-c(cuenta.qua(patron,4,4))
+# El test chi-cuadrado de bondad de ajuste con los conteos observados y con todos los esperados iguales
+chisq.test(nump.qua)
+```
+
+## Análisis mediante un muestreo con quadrats aleatorios.
+
+La exploración por quadrats aleatorios permite calcular distintos índices de agrupamiento,destacando la varianza relativa, el índice de David-Moore, el índice de desigualdad de Lloyd, y el de Morisita.
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center"}
+# La función Simqalea() simula los centros de 20 quadrats de radio 0.08
+centros.qua<-Simqalea(20,0.08)
+plot(patron,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20)
+# La función dibalea.qua() dibuja los quadrats circulares simulados
+dibalea.qua(centros.qua)
+# La función cupenl.qua() calcula cuantos sucesos hay en cada quadrat
+nump.qua<-cupenl.qua(patron,centros.qua)
+# La función indices.qua() calcula los índices de agrupación
+indices.qua(nump.qua)
+```
+
+
+# Métodos de distancia
+
+Los métodos de distancia emplean la información exacta de la localización de todos los puntos, por lo que tienen la ventaja de no depender de elecciones arbitrarias del tamaño o de la forma de los quadrats. Estos métodos pueden emplear las distancias observadas entre todos los sucesos o las distancias hasta el suceso más próximo, bien sea desde la localización de un punto del patrón o desde un lugar cualquiera de la región estudiada.
+
+Las funciones de distribución de estos tres tipos de distancias son habitualmente denotadas por H, G y F. Cuando las localizaciones son independientes, estas funciones son conocidas, y pueden compararse con las funciones de distribución empíricas del patrón puntual.
+
+## Distancias entre sucesos
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center"}
+# Calculamos todas las distancias entre los sucesos
+# La función genérica dist() crea una matriz (n,n) de distancias
+# La función sort() ordena y convierte en vector las n*(n-1)/2 distancias
+distan<-sort(dist(patron))
+par(mfrow=c(1,2))
+hist(distan)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Hgorro <- ecdf(distan)
+plot(Hgorro, verticals= TRUE, do.p = F)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center"}
+# Compararemos la distribución empírica con la teórica Ht()
+plot(sapply(distan,Ht),Hgorro(distan),type="l")
+# La línea roja marca el ajuste perfecto con la aleatoridad espacial completa
+abline(0,1,col=2)
+# La función Henvl() calcula 19 simulaciones de patrones completamente aleatorios 
+# y determina el mínimo y el máximo de la función H empírica para cada distancia
+lims<-Henvl(19,patron)
+# Se pintan en verde los límites inferior y superior de las simulaciones
+lines(sapply(lims$xl,Ht),Hgorro(distan),col="green")
+lines(sapply(lims$xu,Ht),Hgorro(distan),col="green")
+```
+
+## Distancias al vecino más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center"}
+# La función calcdvmp() calcula las distancias al vecino más próximo
+distvmp<-sort(calcdvmp(patron))
+par(mfrow=c(1,2))
+hist(distvmp)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Ggorro <- ecdf(distvmp)
+plot(Ggorro, verticals= TRUE, do.p = F)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center"}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distvmp,Gt,nrow(patron)),Ggorro(distvmp),type="l")
+abline(0,1,col=2)
+lims<-Genvl(19,patron)
+lines(sapply(lims$xl,Gt,nrow(patron)),Ggorro(distvmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(patron)),Ggorro(distvmp),col="green")
+```
+
+## Distancias de un punto al suceso más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center"}
+# La función calcdpsmp() calcula las distancias desde 8*8 puntos aleatorios a los sucesos más próximos
+distpsmp<-sort(caldpsmp(patron,8))
+par(mfrow=c(1,2))
+hist(distpsmp)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Fgorro <- ecdf(distpsmp)
+plot(Fgorro, verticals= TRUE, do.p = F)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center"}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distpsmp,Gt,nrow(patron)),Fgorro(distpsmp),type="l")
+abline(0,1,col=2)
+lims<-Fenvl(19,patron,8)
+lines(sapply(lims$xl,Gt,nrow(patron)),Fgorro(distpsmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(patron)),Fgorro(distpsmp),col="green")
+```
+
+
+# Tarea: Estudio de la distribución de los árboles
+
+Explora los patrones puntuales de robles, arces, secuoyas y pinos, cuyos datos están en los ficheros con los mismos nombres. Pueden ser leídos de la misma forma que en los ejemplos anteriores, excepto el de los pinos, que se carga con el comando $\texttt{source(’pinos.r’)}$.
+
+
+

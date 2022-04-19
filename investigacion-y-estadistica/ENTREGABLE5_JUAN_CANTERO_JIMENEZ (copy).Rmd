@@ -1,0 +1,70 @@
+---
+title: "Entregable sesión 5"
+author: "Juan Cantero Jimenez"
+date: "2/16/2022"
+output: pdf_document
+---
+
+## Lectura de los datos  
+
+```{r}
+load("Plots.Rdata")
+str(Plots)
+Plots$plot <- as.factor(Plots$plot)
+Plots$species <- as.factor(Plots$species)
+str(Plots)
+```
+
+## Analisis de los datos  
+
+```{r}
+aov1 <- aov(growth ~ plot + species + plot:species, data=Plots )
+aov1.summary <- summary(aov1)
+aov1.summary
+```  
+Comprobamos la hipótesis de aplicabilidad  
+
+```{r}
+plot(aov1)
+```  
+
+Es facil observar que los residuos son normales, así como que la varianza es homogenea a lo largo de los valores ajustados, es decir es homocedástica.  
+
+En base a estos resultados se puede concluir que el único efecto relevante en la cantidad de cosecha para el experimento realizado es la especie.  
+
+Por último se muestra la varianza de los residuos así como la del factor especies:  
+
+
+```{r}
+aov2 <- aov(growth ~ species, data=Plots)
+aov2.summary <- summary(aov2)
+
+X <- as.matrix( model.matrix(aov2) )
+speciesB <- X[,2]
+speciesC <- X[,3]
+speciesD <- X[,4]
+speciesA <- X[,1]-(speciesB+speciesC+speciesD)
+
+n <- dim(X)[1]
+t <- dim(X)[2]
+r <- c(sum(speciesA), sum(speciesB), sum(speciesC), sum(speciesD))
+r0 <- (1/(n*(t-1)))*(n^2-sum(r^2))
+
+sigma2 <- as.matrix(aov2.summary[[1]][2,3] )
+mslab <- as.matrix(aov2.summary[[1]][1,3] )
+sigma2b <- (mslab - sigma2) / r0
+cat("Estimación de las componentes mediante el
+método de estimación de momentos","\n",
+"Var(error)=",sigma2, "\n","Var(especie)=",sigma2b,"\n")
+```  
+A continuación se revisará la aplicabilidad de este segundo modelo
+
+```{r}
+plot(aov2)
+```  
+Como se puede observar la variabilidad parece seguir siendo homogénea, sin embargo en el QQplot parece existir una desviación en la normalidad. 
+
+
+
+
+

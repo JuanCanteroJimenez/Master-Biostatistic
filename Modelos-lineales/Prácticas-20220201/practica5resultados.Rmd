@@ -1,0 +1,114 @@
+---
+title: "Practica 5"
+author: "Juan Cantero Jimenez"
+date: "2/20/2022"
+output: pdf_document
+---
+
+## 1
+
+```{r}
+library(ISLR)
+data(Auto)
+```
+
+```{r}
+modelo1 <- with(Auto, lm(mpg  ~ horsepower))
+ks.test(x=rstudent(modelo1), y="pt", df=nrow(Auto)-1)
+qqnorm(modelo1$residuals)
+qqline(modelo1$residuals)
+plot(modelo1)
+```  
+No existen evidencias que descarten la normalidad de este modelo 
+Las hipotesis de homocedasticidad así como de linealidad no se cumplen para el modelo
+En base al tipo de datos que se estan ajustando la hipótesis de independencia se considera correcta. 
+
+
+```{r}
+Auto$invhorsepower <- 1/Auto$horsepower
+modelo2 <- with(Auto, lm(mpg  ~ invhorsepower))
+ks.test(x=rstudent(modelo2), y="pt", df=nrow(Auto)-1)
+qqnorm(modelo2$residuals)
+qqline(modelo2$residuals)
+plot(modelo2)
+```
+No existe evidencia suficiente para descartar la normalidad de los residuos. Parece existir un problema de heterocedasticidad en los datos. Los datos parece poseer una ligera desviación de la linealidad. 
+
+## 2.  
+
+```{r}
+load("Congenitas.Rdata")
+data <- data.frame(muertes=Congenitas, periodo=1:39)
+```
+
+
+```{r}
+modelo3 <- lm(muertes  ~ poly(periodo,2), data)
+summary(modelo3)
+```
+
+```{r}
+qqnorm(modelo3$residuals)
+qqline(modelo3$residuals)
+ks.test(x = rstudent(modelo3), y=pt, df=38)
+```  
+El test de ks no encuentra evidencia significativa para descartar la hípotesis de normalidad en los datos. 
+
+```{r}
+plot(modelo3)
+```
+La hipotesis de homocedasticidad no se cumple principalmente debido a la inclusión de un término cuadrático por el cual al aumentar este aumenta en mayor proporción debido al término provocando un aumento en la variabilidad para valores más altos. 
+
+```{r}
+plot(predict(modelo3, data.frame(periodo=1:39)), rstudent(modelo3))
+```
+
+Como se puede observar los residuos poseen una tendencia ascendente conforme aumentan el valor de la variable dependiente predicha. Así se considerá que la hipótesis de linealidad no se cumple para los datos. 
+
+```{r}
+model4 <- with(data, lm(muertes ~ poly(periodo, 5)))
+plot(model4)
+```  
+No desaparecen estos problemas al aumentar el grado del polinomio. 
+
+## 3
+
+```{r}
+load("estimulos.Rdata")
+pairs(estimulos)
+```
+
+
+```{r}
+model5 <- lm(y ~ x, data=estimulos)
+plot(model5)
+```
+
+```{r}
+anova(model5, lm(y ~ poly(x,2), data=estimulos))
+```
+
+No se considera oportuno introducir un término cuadrático . 
+
+```{r}
+qqnorm(rstudent(model5))
+qqline(rstudent(model5))
+ks.test(rstudent(model5), y ="pt", df=nrow(estimulos)-1)
+```  
+
+A la luz del test de Kolmogorov-Smirnov se he encontrado evidencia suficiente como para descartar la hipótesis de normalidad de los datos. 
+
+```{r}
+lambda <- EnvStats::boxcox(estimulos$y, lambda = c(-5,5), optimize = TRUE)$lambda
+estimulos$ynew <- (estimulos$y^lambda-1)/lambda
+modelo6 <- lm(ynew ~ x, data=estimulos)
+```
+
+```{r}
+plot(modelo6)
+ks.test(rstudent(modelo6), y ="pt", df=nrow(estimulos)-1)
+
+```  
+En este caso con un nivel de significancia de 0.05 no se descarta la hipotesis de normalidad para los datos. 
+
+

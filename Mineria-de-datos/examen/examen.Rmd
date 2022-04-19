@@ -1,0 +1,257 @@
+---
+title: "Examen"
+author: "Juan Cantero Jimenez"
+date: "2/8/2022"
+output: pdf_document
+---
+
+ 
+
+Primero se cargarán los datos, y se descarta la variable que contiene los nombres de los distintos paises. Estos se usan para nombrar a las distintas filas del data.frame
+```{r}
+load("datosfinal2022.RData")
+head(datosfinal)
+paises <- datosfinal$country
+datosfinal.num <- datosfinal[,-1]
+rownames(datosfinal.num) <- paises
+head(datosfinal.num)
+```
+
+
+## Ejercicio 1  
+
+### 1. Muestra UN RESULTADO (numérico o gráfico) que permita conocer la relación entre las variables del banco de datos y coméntalo brevemente.  
+
+```{r}
+correlation_ggplot <- function(data){ # Se crea una función que genera gráficos
+  require(ggplot2)
+  #de correlación para la variables numéricas en el argumento data, usando
+  #el motor gráfico ggplot2
+  tipos <- sapply(data, function(x){
+    is.numeric(x)
+  })#Se obtiene la posición de las columnas de tipo numerico en el data.frame
+  
+  numeric_names <- sort(names(data)[tipos])#Se seleccionan los nombres de las 
+  #variables de tipo factor. Notese que se han ordenado los nombres, esto es
+  #necesario debido a que ggplot2 ordenará posteriormente las variables a 
+  #representar. 
+  data_new <- data[,numeric_names] #Se crea un data.frame adicional que
+  #facilitará la representación con ggplot2
+  correlation_mat <- round(cor(data_new),2)#Se crea la matriz de correlación
+  #en este caso con la función cor
+  
+  correlation_mat[upper.tri(correlation_mat)] <- NA #Se elimina la información
+  # de la diagonal superior, pues esta repetida
+  correlation_mat <- t(correlation_mat) # Por conveniencia se transpone la 
+  #matriz
+  
+  
+  
+  melt_corr <- data.frame(list(Var1=rep(numeric_names, length(numeric_names)),
+                               Var2=rep(numeric_names, 
+                                        rep(length(numeric_names),
+                                            length(numeric_names))),
+                               value=rep(NA, length(numeric_names)^2)))
+  #Se crea un data.frame auxiliar con toda la informacióna representar. Este
+  #se encuentra vacio y se rellenará con el bucle for que se encuentra más abajo.
+  for (x in 1:nrow(melt_corr)){
+    if(!is.na(correlation_mat[melt_corr[x, 2], melt_corr[x,1]])){
+      melt_corr[x, 3] <- correlation_mat[melt_corr[x, 2], melt_corr[x,1]]
+    }
+  }#Se rellena el campo value del dataframe creado con la información presente
+  #en correlation_mat gracias a la información aportada por las variables
+  #Var1 y Var2
+  
+  melt_corr$Var1 <- as.factor(melt_corr$Var1)
+  melt_corr$Var2 <- as.factor(melt_corr$Var2)
+  melt_corr$value <- as.numeric(melt_corr$value)#Se convierten las variables
+  #al tipo neceario
+  melted_cormat <- melt_corr[!is.na(melt_corr$value),]#Se eliminan los NA
+  
+  h <- ggplot(data = melted_cormat, aes(Var1, Var2, fill = value))+ #Se definen
+    #el data.set de donde saldrán los datos, así como que hacer con cada
+    #variable
+    geom_raster() + #Se genera un geom de tipo raster, una imagen. 
+    scale_fill_gradient2(low = "blue", high = "red", mid = "white", 
+                         midpoint = 0, limit = c(-1,1), space = "Lab", 
+                         name="Pearson\nCorrelation") + #Se crea una escala
+    #de color para usar en la imagen creada con geom_raster. 
+    theme_minimal()+ 
+    theme(axis.text.x = element_text(angle = 45, vjust = 1, 
+                                     size = 12, hjust = 1))+#Se define como se
+    #representará la etiqueta del eje x. 
+    coord_fixed()#Se fijan las coordenadas del plot creado. 
+  j <-  h +
+    geom_text(aes(Var1, Var2, label = value), color = "black", size = 4) +
+    theme(
+      axis.title.x = element_blank(),
+      axis.title.y = element_blank(),
+      panel.grid.major = element_blank(),
+      panel.border = element_blank(),
+      panel.background = element_blank(),
+      axis.ticks = element_blank(),
+      legend.justification = c(1, 0),
+      legend.position = c(0.6, 0.7),
+      legend.direction = "horizontal")+
+    guides(fill = guide_colorbar(barwidth = 7, barheight = 1,
+                                 title.position = "top", title.hjust = 0.5))
+  #Se añaden los valores del coeficiente de correlación en la posición adecuada.
+  print(j)#Se imprime el gráfico creado. 
+  
+}
+
+correlation_ggplot(datosfinal.num)
+
+
+
+```  
+
+
+En la imagen anterior se muestra un plot de las correlaciones que poseen las distintas variables del banco de datos entre si. En este se puede aprecira como la variable TM_Lung_men se encuentra relacionada positivamente con smoking_men y alcohol2018, esto es lógico puesto que el consumo de alcohol y tabaco aumenta el riesgo de padecer cancer de pulmon. Tambien es lógico la correlación positiva entre smoking_men y mot_c_men puesto que el tabaco no solo aumenta el riesgo de padecer cancer de pulmon, sino que contribuye al desarrollo de otras enfermedades como cancer de boca o garganta entre otros. 
+
+### 2. ¿Te parece adecuado realizar un ACP sobre este banco de datos? Es decir, ¿la relación entre las variables de este banco de datos recomienda la aplicación de esta técnica o no? Justifica brevemente tu respuesta.  
+Si considero adecuado la realización de un ACP sobre el banco de datos puesto que las variables poseen correlación lineal entre ellas, aunque en distinto grado. 
+
+## Ejercicio 2  
+
+### 1. Muestra UN RESULTADO (numérico o gráfico) que permita conocer la relación entre los individuos y coméntalo brevemente.
+
+```{r}
+describe_custom <- function(data){
+  require(e1071)
+result <- apply(data, 2, function(x){
+  
+  
+  c(media=mean(x),
+    mediana=median(x),
+    varianza = var(x),
+    des_tipic = sd(x),
+    skew = e1071::skewness(x),
+    kurto = e1071::kurtosis(x),
+    maximo = max(x),
+    minimo = min(x),
+    rango = max(x)- min(x),
+    quantile(x , 0.25 ),
+    quantile(x, 0.50),
+    quantile(x, 0.75),
+    shapiro_pvalor = shapiro.test(x)$p.value)
+  
+})
+return(result)
+}
+
+
+
+describe_custom(datosfinal.num)### Debido a la heterogeneidad de las escalas, así como la diferencia en las desviaciones típicas, se decide escalar el banco de datos, para la realicación de un análisis cluster jerarquico
+boxplot(datosfinal.num)
+datosfinal.num.scaled <- scale(datosfinal.num)
+hcl1 <- hclust(dist(datosfinal.num.scaled), method = "average")
+cor(dist(datosfinal.num.scaled), cophenetic(hcl1))
+plot(hcl1,hang=-1)
+
+```
+
+Se ha decidido realizar un análisis de cluster jerarquico con un linkage de tipo average. Este posee una correlación cofenética de 0.82, por lo que se puede considerar una análisis cluster optimo. En el gráfico se puede observar como paises con cercania geográfica, vease Burquina Faso o Mauritania, se encuentran proximos entre sí. Además es interesante como paises que han poseido una fuerte relación a lo largo de la historia reciente se encuentrán próximos entre si, vease Rusia, Estonia y Lituania. 
+
+### 2. ¿Te parece adecuado realizar un análisis de agrupamiento sobre este banco de datos? Justifica brevemente tu respuesta.  
+Si me parece adecuado realizar un análisis cluster del banco de datos puesto que permitirá obtener las relaciones entre las variables. El banco de datos posee una gran diferencia entres las escalas, pero esto es subsanable con un escalado. Además el banco de datos carece de gran cantidad de outlaiers que pudierán dificultar el aglomeramiento. 
+
+## EJERCICIO 3: Análisis de componentes principales
+
+### 1. ¿Crees que el ACP se debería realizar sobre la matriz de varianzas-covarianzas o sobre la de correlaciones? Justifica brevemente tu respuesta.  
+Puesto que existe una notable diferencia en las escalas de las distinta variables, así como en sus varianzas, la opción más óptima es realizarlo sobre la matriz de correlaciones. 
+
+### 2. Realiza el PCA y contesta qué porcentaje de varianza original del banco de datos explican las dos primeras componentes principales.
+```{r}
+pca1<-princomp(datosfinal.num, cor=TRUE)
+summary(pca1)
+```  
+Las dos primeras componentes principales explican el 76 % de la varianza. 
+
+### 3. Interpreta brevemente como se define la primera componente principal.  
+```{r}
+pca1$loadings
+```  
+
+En la primera componente principal podemos observar como aquellas observaciones que posean una baja presion sanguínea, una alta tasa de consumo de alcohol, tabaco, así como una alta tasa de mortalidad en hombres ya sea general o provocada por el cancer de pulmon, obtendran valores positivos grandes. Se podría decir que esta colunma resume la mortalidad debido a efectos de estilo de vida. 
+
+### 4. Interpreta brevemente como se define la segunda componente principal.  
+
+En esta segunda componente princpal podemos ver como paises que posean un escaso consumo de alcohol, bajo BMI así como un nivel bajo de colesterol en sangre y una mortalidad alta de hombres y una media de la presión sanguínea alta poseeran valores positivos grandes. Se podria decir que esta columna resumen ciertos baremos que describen el estado de salud general. 
+
+### 5. Realiza un gráfico en el que sitúes los paises sobre las dos primeras componentes principales y comenta brevemente el resultado en función de lo que representa cada componente principal y la situación de los paises en el gráfico.  
+
+```{r}
+plot(pca1$scores[,1], pca1$scores[,2], main = "ANÁLISIS COMPONENTES PRINCIPALES",xlab = "Estilo de vida", ylab="Baremos medicos", type = "n" )
+text(pca1$scores[,1], pca1$scores[,2], labels = rownames(datosfinal.num),cex=0.8)
+```  
+Como se puede observar en el plot anterior, países del mundo islámico que no consumen alcohol, se encuentran a la izquierda del gráfico. Algo logico en función de la componente principal 1, en el gráfico Estilo de vida. Tambien es interesante observar el comportamiento en la segunda componente principal, en el gráfico Baremos Médicos, Irlanda, España, Asutria o Canada poseen un valor negativo muy alto. Esto puede indicar una baja mortalidad por cáncer o enfermedades cardiovasculares, y un alto BMI o colesterol total en sangre, esto es lógico pues ambas se pueden ver como consecuencia del grado de desarrollo de estos países.
+
+## Ejercicio 4: Analisis cluster.
+
+### 1. ¿Crees que en este caso debes estandarizar las variables antes de realizar un análisis de agrupamiento o no? Justifica brevemente tu respuesta.  
+```{r}
+describe_custom(datosfinal.num)
+```  
+Si puesto que las variables no poseen unidades similares, y la varianza varia mucho a lo largo de las distintas observaciones, vease las varianzas de las variables fat_blood_men, 0.22, y TM_lung_men, 681.60. 
+
+### 2. Realiza un análisis de agrupamiento jerárquico probando los algoritmos “ward.D2”,“single” y “average” y comprueba qué algoritmo obtiene una mayor correlación cofenética.
+
+```{r}
+result <- sapply(c("ward.D2", "single","average"), function(x){
+  clust <- hclust(dist(datosfinal.num.scaled), method = x)
+  return(c( cor(dist(datosfinal.num.scaled), cophenetic(clust))))
+})
+result
+```  
+El metodo average obtiene la mayor correlación cofenética. 
+
+### 
+
+```{r}
+library(NbClust)
+nbclust.complete <- NbClust(data=datosfinal.num.scaled,
+diss=NULL,
+distance="euclidean",
+method="average")
+```  
+Según los resultados obtenidos el mejor número de particiones es 3. 
+
+### 4. Realiza un análisis de agrupamiento mediante el algoritmo de k-medias considerando como centroides iniciales los que se derivan de los grupos definidos como mejor partición en el apartado anterior. ¿Cambia la composición de los grupos formados o se mantiene igual o muy similar?
+
+```{r}
+partition <- nbclust.complete$Best.partition
+countri_clusters <-list(clust1=names(partition[partition==1]),
+clust2=names(partition[partition==2]),
+clust3=names(partition[partition==3]))
+centroides <- t(as.data.frame( lapply(countri_clusters, function(x, y){
+clust <- y[which(rownames(y) %in% x),]
+apply(clust, 2, mean)
+}, y = datosfinal.num.scaled)))
+
+clust_kmeans <-kmeans(datosfinal.num.scaled,centroides,nstart = 100)
+
+nbclust.complete$Best.partition
+clust_kmeans$cluster
+nbclust.complete$Best.partition == clust_kmeans$cluster
+
+```  
+Como se puede observar, ambas particiones son idénticas. 
+
+### 5 A partir de los clusters obtenidos mediante el algoritmo de k-medias del apartado 4, realiza un análisis exploratorio a tu elección que te permita caracterizar cada grupo en función de las variables disponibles
+
+```{r}
+pca2 <- princomp(datosfinal.num.scaled)
+summary(pca2)
+pca2$loadings ### como se puede observar, los loadings son idénticos a 
+### los de pca1
+
+plot(pca2$scores[,1], pca2$scores[,2], main = "K-means",xlab = "Estilo de vida", ylab="Baremos medicos", type = "n" )
+text(pca2$scores[,1], pca2$scores[,2], labels = rownames(datosfinal.num),cex=0.8,col = clust_kmeans$cluster)
+pairs(datosfinal.num.scaled, col=clust_kmeans$cluster)
+par(mfrow=c(3,3))
+for (i in 1:7){
+  boxplot(datosfinal.num.scaled[,i] ~ clust_kmeans$cluster, main=colnames(datosfinal.num.scaled)[i])
+}
+```
+Como se puede observar existen grandes diferencias entre las medias de las distintas variable cuantitativas agrupadas en función de los distintos cluster, siendo la única que no presenta esta heterogeneidad la presión sanguínea. 

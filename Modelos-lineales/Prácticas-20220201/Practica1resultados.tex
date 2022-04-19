@@ -1,0 +1,286 @@
+% Options for packages loaded elsewhere
+\PassOptionsToPackage{unicode}{hyperref}
+\PassOptionsToPackage{hyphens}{url}
+%
+\documentclass[
+]{article}
+\usepackage{amsmath,amssymb}
+\usepackage{lmodern}
+\usepackage{ifxetex,ifluatex}
+\ifnum 0\ifxetex 1\fi\ifluatex 1\fi=0 % if pdftex
+  \usepackage[T1]{fontenc}
+  \usepackage[utf8]{inputenc}
+  \usepackage{textcomp} % provide euro and other symbols
+\else % if luatex or xetex
+  \usepackage{unicode-math}
+  \defaultfontfeatures{Scale=MatchLowercase}
+  \defaultfontfeatures[\rmfamily]{Ligatures=TeX,Scale=1}
+\fi
+% Use upquote if available, for straight quotes in verbatim environments
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\IfFileExists{microtype.sty}{% use microtype if available
+  \usepackage[]{microtype}
+  \UseMicrotypeSet[protrusion]{basicmath} % disable protrusion for tt fonts
+}{}
+\makeatletter
+\@ifundefined{KOMAClassName}{% if non-KOMA class
+  \IfFileExists{parskip.sty}{%
+    \usepackage{parskip}
+  }{% else
+    \setlength{\parindent}{0pt}
+    \setlength{\parskip}{6pt plus 2pt minus 1pt}}
+}{% if KOMA class
+  \KOMAoptions{parskip=half}}
+\makeatother
+\usepackage{xcolor}
+\IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
+\IfFileExists{bookmark.sty}{\usepackage{bookmark}}{\usepackage{hyperref}}
+\hypersetup{
+  pdftitle={Practica 1},
+  pdfauthor={Juan Cantero Jimenez},
+  hidelinks,
+  pdfcreator={LaTeX via pandoc}}
+\urlstyle{same} % disable monospaced font for URLs
+\usepackage[margin=1in]{geometry}
+\usepackage{color}
+\usepackage{fancyvrb}
+\newcommand{\VerbBar}{|}
+\newcommand{\VERB}{\Verb[commandchars=\\\{\}]}
+\DefineVerbatimEnvironment{Highlighting}{Verbatim}{commandchars=\\\{\}}
+% Add ',fontsize=\small' for more characters per line
+\usepackage{framed}
+\definecolor{shadecolor}{RGB}{248,248,248}
+\newenvironment{Shaded}{\begin{snugshade}}{\end{snugshade}}
+\newcommand{\AlertTok}[1]{\textcolor[rgb]{0.94,0.16,0.16}{#1}}
+\newcommand{\AnnotationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\AttributeTok}[1]{\textcolor[rgb]{0.77,0.63,0.00}{#1}}
+\newcommand{\BaseNTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\BuiltInTok}[1]{#1}
+\newcommand{\CharTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\CommentTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\CommentVarTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ConstantTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ControlFlowTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\DataTypeTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{#1}}
+\newcommand{\DecValTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\DocumentationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\ErrorTok}[1]{\textcolor[rgb]{0.64,0.00,0.00}{\textbf{#1}}}
+\newcommand{\ExtensionTok}[1]{#1}
+\newcommand{\FloatTok}[1]{\textcolor[rgb]{0.00,0.00,0.81}{#1}}
+\newcommand{\FunctionTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\ImportTok}[1]{#1}
+\newcommand{\InformationTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\newcommand{\KeywordTok}[1]{\textcolor[rgb]{0.13,0.29,0.53}{\textbf{#1}}}
+\newcommand{\NormalTok}[1]{#1}
+\newcommand{\OperatorTok}[1]{\textcolor[rgb]{0.81,0.36,0.00}{\textbf{#1}}}
+\newcommand{\OtherTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{#1}}
+\newcommand{\PreprocessorTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textit{#1}}}
+\newcommand{\RegionMarkerTok}[1]{#1}
+\newcommand{\SpecialCharTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\SpecialStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\StringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\VariableTok}[1]{\textcolor[rgb]{0.00,0.00,0.00}{#1}}
+\newcommand{\VerbatimStringTok}[1]{\textcolor[rgb]{0.31,0.60,0.02}{#1}}
+\newcommand{\WarningTok}[1]{\textcolor[rgb]{0.56,0.35,0.01}{\textbf{\textit{#1}}}}
+\usepackage{graphicx}
+\makeatletter
+\def\maxwidth{\ifdim\Gin@nat@width>\linewidth\linewidth\else\Gin@nat@width\fi}
+\def\maxheight{\ifdim\Gin@nat@height>\textheight\textheight\else\Gin@nat@height\fi}
+\makeatother
+% Scale images if necessary, so that they will not overflow the page
+% margins by default, and it is still possible to overwrite the defaults
+% using explicit options in \includegraphics[width, height, ...]{}
+\setkeys{Gin}{width=\maxwidth,height=\maxheight,keepaspectratio}
+% Set default figure placement to htbp
+\makeatletter
+\def\fps@figure{htbp}
+\makeatother
+\setlength{\emergencystretch}{3em} % prevent overfull lines
+\providecommand{\tightlist}{%
+  \setlength{\itemsep}{0pt}\setlength{\parskip}{0pt}}
+\setcounter{secnumdepth}{-\maxdimen} % remove section numbering
+\ifluatex
+  \usepackage{selnolig}  % disable illegal ligatures
+\fi
+
+\title{Practica 1}
+\author{Juan Cantero Jimenez}
+\date{2/20/2022}
+
+\begin{document}
+\maketitle
+
+\hypertarget{la-media-y-la-mediana-son-dos-estimadores-de-tendencia-central-en-distribuciones-ampliamente-conocidos-y-utilizados.-en-esta-tarea-nos-vamos-a-plantear-su-comparaciuxf3n-como-estimadores-de-la-media-de-una-distribuciuxf3n-normal.-para-ello-vamos-a-hacer-uso-de-procedimientos-de-tipo-empuxedrico-muxe1s-que-de-razonamientos-teuxf3ricos.-asuxed}{%
+\subsection{1 La media y la mediana son dos estimadores de tendencia
+central en distribuciones, ampliamente conocidos y utilizados. En esta
+tarea nos vamos a plantear su comparación como estimadores de la media
+de una distribución Normal. Para ello vamos a hacer uso de
+procedimientos de tipo empírico más que de razonamientos teóricos.
+Así:}\label{la-media-y-la-mediana-son-dos-estimadores-de-tendencia-central-en-distribuciones-ampliamente-conocidos-y-utilizados.-en-esta-tarea-nos-vamos-a-plantear-su-comparaciuxf3n-como-estimadores-de-la-media-de-una-distribuciuxf3n-normal.-para-ello-vamos-a-hacer-uso-de-procedimientos-de-tipo-empuxedrico-muxe1s-que-de-razonamientos-teuxf3ricos.-asuxed}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{result\_normal }\OtherTok{\textless{}{-}} \FunctionTok{replicate}\NormalTok{(}\DecValTok{100}\NormalTok{, \{}
+\NormalTok{  data }\OtherTok{\textless{}{-}} \FunctionTok{rnorm}\NormalTok{(}\DecValTok{50}\NormalTok{)}
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\AttributeTok{media=}\FunctionTok{mean}\NormalTok{(data), }\AttributeTok{mediana =} \FunctionTok{median}\NormalTok{(data)))}
+\NormalTok{\})}
+\NormalTok{result\_student }\OtherTok{\textless{}{-}} \FunctionTok{replicate}\NormalTok{(}\DecValTok{100}\NormalTok{, \{}
+\NormalTok{  data }\OtherTok{\textless{}{-}} \FunctionTok{rt}\NormalTok{(}\DecValTok{50}\NormalTok{,}\DecValTok{1}\NormalTok{)}
+  \FunctionTok{return}\NormalTok{(}\FunctionTok{c}\NormalTok{(}\AttributeTok{media=}\FunctionTok{mean}\NormalTok{(data), }\AttributeTok{mediana=}\FunctionTok{median}\NormalTok{(data)))}
+\NormalTok{\})}
+\FunctionTok{cat}\NormalTok{(}\StringTok{"ECM media muestra normal"}\NormalTok{, }\FunctionTok{mean}\NormalTok{((}\DecValTok{0}\SpecialCharTok{{-}}\NormalTok{result\_normal[}\StringTok{"media"}\NormalTok{,])}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## ECM media muestra normal 0.02143283
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"ECM mediana muestra normal"}\NormalTok{, }\FunctionTok{mean}\NormalTok{((}\DecValTok{0}\SpecialCharTok{{-}}\NormalTok{result\_normal[}\StringTok{"mediana"}\NormalTok{,])}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## ECM mediana muestra normal 0.03009464
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"ECM media muestra student"}\NormalTok{, }\FunctionTok{mean}\NormalTok{((}\DecValTok{0}\SpecialCharTok{{-}}\NormalTok{result\_student[}\StringTok{"media"}\NormalTok{,])}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## ECM media muestra student 164.7917
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{cat}\NormalTok{(}\StringTok{"ECM mediana muestra student"}\NormalTok{, }\FunctionTok{mean}\NormalTok{((}\DecValTok{0}\SpecialCharTok{{-}}\NormalTok{result\_student[}\StringTok{"mediana"}\NormalTok{,])}\SpecialCharTok{\^{}}\DecValTok{2}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## ECM mediana muestra student 0.05203244
+\end{verbatim}
+
+\hypertarget{supongamos-que-disponemos-de-la-siguiente-muestra-de-valores-set.seed1-x---exprnorm50-todos-ellos-valores-positivos-en-la-recta-real.-para-este-conjunto-de-datos-nos-planteamos-ajustarles-una-distribuciuxf3n-gamma-adecuada-para-este-tipo-de-datos-con-valores-positivos.-halla-haciendo-uso-de-r-los-estimadores-mle-de-ux3b1-y-ux3b2-y-representa-un-histograma-de-la-muestra-de-valores-x-con-la-distribuciuxf3n-gamma-que-hayas-estimado-superpuesta.-haciendo-uso-de-la-aproximaciuxf3n-normal-de-los-mle-calcula-un-intervalo-de-confianza-al-95-para-el-paruxe1metro-ux3b1-de-la-distribuciuxf3n-que-acabas-de-calcular.}{%
+\subsection{2 Supongamos que disponemos de la siguiente muestra de
+valores: set.seed(1); x \textless- exp(rnorm(50)), todos ellos valores
+positivos en la recta real. Para este conjunto de datos, nos planteamos
+ajustarles una distribución Gamma), adecuada para este tipo de datos con
+valores positivos. Halla, haciendo uso de R, los estimadores MLE de α y
+β y representa un histograma de la muestra de valores x, con la
+distribución Gamma que hayas estimado superpuesta. Haciendo uso de la
+aproximación Normal de los MLE calcula un intervalo de confianza al 95\%
+para el parámetro α de la distribución que acabas de
+calcular.}\label{supongamos-que-disponemos-de-la-siguiente-muestra-de-valores-set.seed1-x---exprnorm50-todos-ellos-valores-positivos-en-la-recta-real.-para-este-conjunto-de-datos-nos-planteamos-ajustarles-una-distribuciuxf3n-gamma-adecuada-para-este-tipo-de-datos-con-valores-positivos.-halla-haciendo-uso-de-r-los-estimadores-mle-de-ux3b1-y-ux3b2-y-representa-un-histograma-de-la-muestra-de-valores-x-con-la-distribuciuxf3n-gamma-que-hayas-estimado-superpuesta.-haciendo-uso-de-la-aproximaciuxf3n-normal-de-los-mle-calcula-un-intervalo-de-confianza-al-95-para-el-paruxe1metro-ux3b1-de-la-distribuciuxf3n-que-acabas-de-calcular.}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{set.seed}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+\NormalTok{x }\OtherTok{\textless{}{-}} \FunctionTok{exp}\NormalTok{(}\FunctionTok{rnorm}\NormalTok{(}\DecValTok{50}\NormalTok{))}
+\NormalTok{minusloglikelihod }\OtherTok{\textless{}{-}} \ControlFlowTok{function}\NormalTok{(alpha, beta)\{}\SpecialCharTok{{-}}\FunctionTok{sum}\NormalTok{(}\FunctionTok{dgamma}\NormalTok{(x, alpha, beta, }\AttributeTok{log=}\ConstantTok{TRUE}\NormalTok{))\}}
+\NormalTok{fit1}\OtherTok{\textless{}{-}}\NormalTok{stats4}\SpecialCharTok{::}\FunctionTok{mle}\NormalTok{(minusloglikelihod, }\AttributeTok{start=}\FunctionTok{list}\NormalTok{(}\AttributeTok{alpha=}\FloatTok{0.1}\NormalTok{, }\AttributeTok{beta=}\FloatTok{0.1}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## Warning in dgamma(x, alpha, beta, log = TRUE): NaNs produced
+
+## Warning in dgamma(x, alpha, beta, log = TRUE): NaNs produced
+
+## Warning in dgamma(x, alpha, beta, log = TRUE): NaNs produced
+
+## Warning in dgamma(x, alpha, beta, log = TRUE): NaNs produced
+
+## Warning in dgamma(x, alpha, beta, log = TRUE): NaNs produced
+
+## Warning in dgamma(x, alpha, beta, log = TRUE): NaNs produced
+
+## Warning in dgamma(x, alpha, beta, log = TRUE): NaNs produced
+
+## Warning in dgamma(x, alpha, beta, log = TRUE): NaNs produced
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{fit1}\SpecialCharTok{@}\NormalTok{coef}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+##    alpha     beta 
+## 1.896841 1.288558
+\end{verbatim}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\FunctionTok{hist}\NormalTok{(x, }\AttributeTok{prob =} \ConstantTok{TRUE}\NormalTok{, }\AttributeTok{col=}\StringTok{"gray"}\NormalTok{)}
+\FunctionTok{lines}\NormalTok{((}\DecValTok{0}\SpecialCharTok{:}\DecValTok{5000}\NormalTok{)}\SpecialCharTok{/}\DecValTok{1000}\NormalTok{, }\FunctionTok{dgamma}\NormalTok{((}\DecValTok{0}\SpecialCharTok{:}\DecValTok{5000}\NormalTok{)}\SpecialCharTok{/}\DecValTok{1000}\NormalTok{, fit1}\SpecialCharTok{@}\NormalTok{coef[}\DecValTok{1}\NormalTok{], fit1}\SpecialCharTok{@}\NormalTok{coef[}\DecValTok{2}\NormalTok{]), }\AttributeTok{lwd=}\DecValTok{2}\NormalTok{, }\AttributeTok{col=}\StringTok{"red"}\NormalTok{)}
+\end{Highlighting}
+\end{Shaded}
+
+\includegraphics{Practica1resultados_files/figure-latex/unnamed-chunk-2-1.pdf}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{fit1}\SpecialCharTok{@}\NormalTok{coef[}\DecValTok{1}\NormalTok{] }\SpecialCharTok{+} \FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{)}\SpecialCharTok{*}\FunctionTok{qnorm}\NormalTok{(}\FloatTok{0.975}\NormalTok{)}\SpecialCharTok{*}\NormalTok{(}\FunctionTok{sqrt}\NormalTok{(fit1}\SpecialCharTok{@}\NormalTok{vcov[}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{])}\SpecialCharTok{/}\FunctionTok{sqrt}\NormalTok{(}\DecValTok{50}\NormalTok{))}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 1.799519 1.994163
+\end{verbatim}
+
+\hypertarget{reproduce-por-ti-mismo-el-ejemplo-de-la-puxe1gina-17-del-tema-1-de-la-asignatura.-comprueba-que-los-resultados-que-obtienes-en-cuanto-a-la-proporciuxf3n-de-veces-que-los-intervalos-de-confianza-contienen-el-valor-0-son-similares-a-los-de-los-apuntes}{%
+\subsection{3. Reproduce por ti mismo el ejemplo de la página 17 del
+Tema 1 de la asignatura. Comprueba que los resultados que obtienes en
+cuanto a la proporción de veces que los intervalos de confianza
+contienen el valor 0 son similares a los de los
+apuntes}\label{reproduce-por-ti-mismo-el-ejemplo-de-la-puxe1gina-17-del-tema-1-de-la-asignatura.-comprueba-que-los-resultados-que-obtienes-en-cuanto-a-la-proporciuxf3n-de-veces-que-los-intervalos-de-confianza-contienen-el-valor-0-son-similares-a-los-de-los-apuntes}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{result }\OtherTok{\textless{}{-}} \FunctionTok{replicate}\NormalTok{(}\DecValTok{1000}\NormalTok{, \{}
+\NormalTok{  data }\OtherTok{\textless{}{-}} \FunctionTok{rnorm}\NormalTok{(}\DecValTok{100}\NormalTok{)}
+\NormalTok{  media }\OtherTok{\textless{}{-}} \FunctionTok{mean}\NormalTok{(data)}
+\NormalTok{  ic }\OtherTok{\textless{}{-}}\NormalTok{ media}\SpecialCharTok{+}\FunctionTok{c}\NormalTok{(}\SpecialCharTok{{-}}\DecValTok{1}\NormalTok{,}\DecValTok{1}\NormalTok{)}\SpecialCharTok{*}\FloatTok{1.96}\SpecialCharTok{*}\NormalTok{(}\DecValTok{1}\SpecialCharTok{/}\FunctionTok{sqrt}\NormalTok{(}\DecValTok{100}\NormalTok{))}
+\NormalTok{  ic[}\DecValTok{1}\NormalTok{] }\SpecialCharTok{\textless{}} \DecValTok{0} \SpecialCharTok{\&}\NormalTok{ ic[}\DecValTok{2}\NormalTok{] }\SpecialCharTok{\textgreater{}} \DecValTok{0}
+\NormalTok{\})}
+\FunctionTok{mean}\NormalTok{(result)}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.955
+\end{verbatim}
+
+\hypertarget{utiliza-la-funciuxf3n-t.test-de-r-para-valorar-si-encuentras-diferencias-en-las-medias-de-las-poblaciones-de-las-que-provienen-las-siguientes-2-muestras-set.seed1x-rnorm10-e-y-rnorm101.-eleva-el-tamauxf1o-muestral-de-ambas-muestras-a-20-y-30-para-valorar-como-cambian-tus-conclusiones.}{%
+\subsection{4 Utiliza la función t.test de R para valorar si encuentras
+diferencias en las medias de las poblaciones de las que provienen las
+siguientes 2 muestras: set.seed(1);x\textless-rnorm(10) e
+y\textless-rnorm(10,1). Eleva el tamaño muestral de ambas muestras a 20
+y 30 para valorar como cambian tus
+conclusiones.}\label{utiliza-la-funciuxf3n-t.test-de-r-para-valorar-si-encuentras-diferencias-en-las-medias-de-las-poblaciones-de-las-que-provienen-las-siguientes-2-muestras-set.seed1x-rnorm10-e-y-rnorm101.-eleva-el-tamauxf1o-muestral-de-ambas-muestras-a-20-y-30-para-valorar-como-cambian-tus-conclusiones.}}
+
+\begin{Shaded}
+\begin{Highlighting}[]
+\NormalTok{ns }\OtherTok{\textless{}{-}} \FunctionTok{c}\NormalTok{(}\DecValTok{10}\NormalTok{, }\DecValTok{20}\NormalTok{, }\DecValTok{30}\NormalTok{)}
+\NormalTok{result }\OtherTok{\textless{}{-}} \FunctionTok{sapply}\NormalTok{(ns, }\ControlFlowTok{function}\NormalTok{(x)\{}
+  \FunctionTok{set.seed}\NormalTok{(}\DecValTok{1}\NormalTok{)}
+\NormalTok{  xx }\OtherTok{\textless{}{-}} \FunctionTok{rnorm}\NormalTok{(x)}
+\NormalTok{  yy }\OtherTok{\textless{}{-}} \FunctionTok{rnorm}\NormalTok{(x, }\DecValTok{1}\NormalTok{)}
+  \FunctionTok{t.test}\NormalTok{(xx, yy)}\SpecialCharTok{$}\NormalTok{p.value}
+\NormalTok{  \})}
+\NormalTok{result}
+\end{Highlighting}
+\end{Shaded}
+
+\begin{verbatim}
+## [1] 0.0165778586 0.0071229035 0.0000159436
+\end{verbatim}
+
+\end{document}

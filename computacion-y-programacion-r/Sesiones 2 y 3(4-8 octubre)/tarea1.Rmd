@@ -1,0 +1,119 @@
+---
+title: "Tarea 1"
+author: "Juan Cantero Jimenez"
+date: "10/22/2021"
+output: pdf_document
+---
+
+1. Crear el vector exp(1):1 y convertirlo a character, luego convertirlo en enteros. Construir otra secuencia 1:exp(1) y convertirlo a character, luego convertirlo en enteros. Compara las dos secuencias finales (por ejemplo restando ambos vectores).
+
+
+```{r}
+v1 <- exp(1):1 
+print(v1)
+v1c <- as.character(v1)
+print(v1c)
+v1i <- as.integer(v1c)
+print(v1i)
+
+v1 == v1i
+
+v1-v1i
+
+v2 <- 1:exp(1)
+print(v2)
+v2c <- as.character(v2)
+print(v2c)
+v2i <- as.integer(v2c)
+print(v2i)
+
+v2 == v2i
+
+v2-v2i
+
+abs(v2-v1)
+v2 == v1
+
+```
+
+
+2. En algunas ocasiones queremos discretizar una variable continua en categorias, para ello utilizaremos la funcion cut(). Por otra parte, para simular de una distribución t-Student veremos en el tema 3 que se utiliza la funcion rt(). Simular 100 valores de una t-Student con 10 grados de libertad y dividir los valores en 5 categorías. Utilizar table() para ver que hay cinco categorias.
+
+
+```{r}
+set.seed(1)
+
+sim <- function(){
+  v <- rt(100, 10)
+  return(table(cut(v,5)))
+}
+sim()
+```
+
+
+3. Utilizar las funciones rep() y seq() para producir un vector que contenga:
+begin{enumerate}
+item 1000 valores que indiquen paciente ’SANO’ y paciente ’Enfermo’, en
+concreto, los primeros 500 sanos y luego 500 enfermos.
+item 100 valores consecutivos entre 1 y 20 dos veces seguidas, esto es, 1, 2,
+. . ., 20, 1, 2, . . ., 20.
+item los valores: 1, 2, 2, 3, 3, 3, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6.
+item la secuencia: 1, 2, 3, 4, 4, 3, 2, 1, 1, 1, 1, 1, 1.
+end{enumerate}
+
+
+```{r}
+#### a 
+bin <-  rep(c("SANO","Enfermo"), c(500, 500))
+length(bin)
+table(bin)
+
+#### b 
+ji <- rep(seq(1,20,length.out=100) , 2)
+ji
+
+#### c 
+ja <- rep(1:6, 1:6)
+ja
+table(ja)
+
+#### d
+ju <- c(seq(1, 4), seq(4, 1) , rep(1, 5))
+ju
+```
+
+
+4. Busqueda de un banco de datos en la web del INE que contenga una variable
+estudiada por año, por provincia (comunidad autonoma o municipio) y
+por alguna otra variable (genero, sector industrial...). Una vez descargado
+se debe leer desde R (con codigo) y convertirlo en un data.frame con 4
+variables, la estudiada, el año, la provincia (o similar) y la otra variable
+seleccionada. Da el formato correcto (numerico, factor, etc.) a cada columna
+del banco de datos (si no lo tiene).
+
+
+```{r}
+data = read.csv("20173.csv",sep = ";")
+colnames(data)
+ncol(data)
+nrow(data)
+## clase y tipo de los datos
+for (x in colnames(data)){
+  cat("La variable",x,"es de clase",class(data[[x]]),"\n")
+  cat("La variable",x,"es de tipo",typeof(data[[x]]),"\n")
+}
+#Se ha considerado oportuno retirar la numeración que aparece antes de cada provincia
+#Para esto se hace uso de la función gsub 
+data$Provincias <- as.factor(gsub("\\d{1}","",data$Provincias))
+data$Tipo.de.disolución.matrimonial <- as.factor(data$Tipo.de.disolución.matrimonial)
+#Es necesario quitar el punto que en español indica unidades de millar pero que en ingles
+#indica los decimales, esto se realiza con la función gsub
+
+data$Total <- as.numeric(gsub(".","",data$Total))
+for (x in colnames(data)){
+  cat("La variable",x,"es de clase",class(data[[x]]),"\n")
+  cat("La variable",x,"es de tipo",typeof(data[[x]]),"\n")
+}
+
+```
+

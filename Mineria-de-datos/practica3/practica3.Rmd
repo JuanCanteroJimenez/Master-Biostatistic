@@ -1,0 +1,145 @@
+---
+title: "Practica 3"
+author: "Juan Cantero Jimenez"
+date: "1/30/2022"
+output: pdf_document
+---
+
+## Tarea 4  
+Para la realización de esta tarea se seguirá el guión de la Tarea 3 que se encuentra en la Practica 3
+
+### 1. Carga los datos y explóralos. ¿Crees que en este caso debes estandarizar las variables antes de realizar un análisis de agrupamiento o no? Justifica brevemente tu respuesta.
+
+```{r}
+describe_custom <- function(data){
+  require(e1071)
+  result <- apply(data, 2, function(x){
+    
+    
+    c(media=mean(x),
+      mediana=median(x),
+      varianza = var(x),
+      des_tipic = sd(x),
+      skew = e1071::skewness(x),
+      kurto = e1071::kurtosis(x),
+      maximo = max(x),
+      minimo = min(x),
+      rango = max(x)- min(x),
+      quantile(x , 0.25 ),
+      quantile(x, 0.50),
+      quantile(x, 0.75),
+      shapiro_pvalor = shapiro.test(x)$p.value)
+    
+  })
+  return(result)
+}
+
+load("datoscluster.RData")
+head(datosfinal)
+paises <- datosfinal$country
+datosfinal_numeric <- datosfinal[,-1]
+describe_custom(datosfinal_numeric)
+```
+Puesto que existe una diferencia notable en las escalas de las distintas variables, además de no poseer las mismas unidades, se escalarán en los subsiguientes análisis.  
+
+### 2. Realiza un análisis de outliers mediante la distancia de Mahalanobis para conocer el comportamiento de tu banco de datos.  
+```{r}
+x <- scale(datosfinal_numeric)
+rownames(x) <- paises
+ma <- mahalanobis(x, apply(x, 2, mean), cov(x))
+k <- dim(x)[2] 
+Lim <- k + 3 * sqrt(k * 2) 
+plot(ma, pch = 20, ylim = c(0, max(ma, Lim, na.rm = TRUE)))
+text(ma, rownames(x), pos = 2)
+abline(h = Lim)
+title("Distancia de Mahalanobis")
+```  
+
+El análisis de outliers según la distancia de Mahalanobis no deja ver ninguna observación anómala. 
+
+### 3. Realiza un análisis de agrupamiento jerárquico probando los algoritmos “ward.D2”,“single”,“complete” y “average” y comprueba:
+
+```{r}
+distancias <- dist(scale(datosfinal_numeric))
+clust_ward <- hclust(distancias, method="ward.D2",)
+cor(distancias, cophenetic(clust_ward))
+clust_single <- hclust(distancias, method="single")
+cor(distancias, cophenetic(clust_single))
+clust_complete <- hclust(distancias, method="complete")
+cor(distancias, cophenetic(clust_complete))
+clust_average <- hclust(distancias, method="average")
+cor(distancias, cophenetic(clust_average))
+par(mfrow=c(2,2))
+plot(clust_ward)
+plot(clust_single)
+plot(clust_complete)
+plot(clust_average)
+
+```  
+
+
+#### - ¿Detectas cierta estabilidad en los paises que se unen mediante los 4 dendogramas obtenidos?  
+
+Los metodos "ward.D2", "complete" y "average" dan como resultado dos grandes grupos con una composición mas o menos similar. Además tanto "complete" como "average" ofrecen la agrupación más similar. 
+
+#### - ¿Qué algoritmo obtiene una mayor correlación cofenética?  
+
+El método de "average" es el que posee una mayor correlación cofenética.  
+
+### 4. A partir del algoritmo con mejor comportamiento en el apartado anterior, utiliza la función Nbclust con ese método para seleccionar en base a todos los índices que calcula dicha función el mejor número de clusters para este banco de datos (seleccionando el que proporcionen como óptimo el mayor número de índices).
+
+```{r}
+library(NbClust)
+nbclust.complete <- NbClust(data=scale(datosfinal_numeric),
+                            diss=NULL,
+                            distance="euclidean",
+                            method="average")
+```  
+Se usarán tres clusters debido a que es el número optimo arrojado por la función NbClust.  
+
+### 5. En el apartado anterior has obtenido una propuesta del número óptimo de clusters y una propuesta de partición de los individuos en clusters (resultado $Best.partition de la función Nbclust)  
+
+#### - Considera los clusters propuestos y calcula el centroide de cada uno de esos grupos propuestos (simplemente con la media para cada variable en cada grupo)
+
+```{r}
+partition <- nbclust.complete$Best.partition
+countri_clusters <- list(clust1=as.numeric(names(partition[partition==1])),
+                         clust2=as.numeric(names(partition[partition==2])),
+                         clust3=as.numeric(names(partition[partition==3])))
+centroides <- t(as.data.frame( lapply(countri_clusters, function(x, y){
+  
+  clust <- y[which(as.numeric(rownames(y)) %in% x),]
+  
+  apply(clust, 2, mean)
+}, y = datosfinal_numeric)))
+
+```
+
+#### - Realiza un análisis de agrupamiento mediante el algoritmo de k-medias considerando como centroides iniciales los que has obtenido en el apartado anterior
+
+```{r}
+clust_kmeans <-kmeans(datosfinal_numeric,centroides,nstart = 100)
+```  
+
+#### - ¿Obtienes la misma composición de paises en los grupos o se produce alguna variación?
+
+```{r}
+nbclust.complete$Best.partition
+clust_kmeans$cluster
+nbclust.complete$Best.partition==clust_kmeans$cluster
+```  
+Como se puede observar se obtiene practicamente la misma composición de clusters.  
+
+
+### 6. Partiendo del resultado de la composición de los clusters obtenidos en el apartado anterior, realiza un análisis exploratorio que te permita explicar la composición de cada grupo en función de las variables disponibles. Puedes apoyarte de descriptivos de las varibles en cada grupo o bien de un análisis de componentes principales que te ayude a explicar, en dos dimensiones, la composición de los grupos.
+
+```{r}
+library(factoextra)
+fviz_cluster(clust_kmeans, data=x)
+```  
+En la representación del resultado del análisis de componentes principales del dataset, coloreado en función de los cluster, podemos observar como países pertenecientes al extinto Pacto de Varsovia o a la URSS se agrupan en un cluster, algo lógico puesto que la independencia de estos se produjo hace relativamente poco. También podemos observar como el cluster 2 solo posee países de la OCDE, aunque debe destacarse que tanto Hungría como México pertenecen a esta asociación de países. Por último encontramos el cluster 3 que aparte de ser el más disperso, presenta el conjunto de países más heterogéneo, pudiendo observarse regiones tan distantes como Centroamérica, México; Sudamérica, Venezuela; Sahel, Burkina Faso o Oriente Próximo, Omán y Irán. De todos los cluster este es el que presenta una mayor dificultad en la interpretación. 
+
+
+
+
+

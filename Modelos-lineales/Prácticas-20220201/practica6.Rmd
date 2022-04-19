@@ -1,0 +1,55 @@
+---
+title: "Practica 6"
+author: "Juan Cantero Jimenez"
+date: "2/20/2022"
+output: pdf_document
+---
+
+```{r}
+library(ISLR)
+data(Auto)
+str(Auto)
+auto_num <- Auto[,1:7]
+mod1 <- lm(mpg ~ ., data=auto_num)
+plot(mod1)
+```
+
+Si se pueden observar 3 valores con una gran influencia sobre el modelo. Las observaciones 327, 394 y la 14. Sin embargo la influencia de estos depende de distinto factores. En el caso de las observaciones 327 y 394 esto se debe al alto valor de su residuo mientras que en la 14 este comportamiento se debe a su alto leverage. 
+
+Los valores 327 y 394 la extimación de mpg es menor que la real, y en el caso de la 14 esta es mayor. 
+
+Si el vehiculo 14 pues posee un alto leverage. 
+
+El leverage de una observación depende de sus covariables, pero acumula la información de todas estas. Así al poseer variables no relevantes el leverage acumula la información no necesaria encontrada en estas. Si cambiara la interpretación y en terminos generales el leverage será menor. 
+
+## 2
+
+```{r}
+Auto$origin <- as.factor(Auto$origin)
+str(Auto)
+Auto$origin<-relevel(Auto$origin,ref="2")
+
+mod4 <- lm(mpg ~ year + weight + year:weight + origin, data=Auto)
+mod4
+summary(mod4)
+```  
+No existen diferencias significativas entre los coches japoneses y europes. 
+
+```{r}
+aov(mpg ~ origin, Auto)
+```
+
+```{r}
+Auto$origin<-relevel(Auto$origin,ref="1")
+
+mod5 <- lm(mpg ~ year + weight + year:weight + origin + weight:origin + year:origin, data=Auto)
+mod5
+summary(mod5)
+```
+Europa a tenido una mejor evolución temporal pues en este lugar el aumento del año implica una mayor cantidad de mpg respecto a los demas. De igual forma en japon el peso del coche posee mas influencia. 
+
+```{r}
+plot(mod5)
+Auto[c(327, 334, 33),]
+```
+

@@ -1,0 +1,220 @@
+---
+title: "cabritus"
+author: "cristina ibáñez"
+date: "6/3/2022"
+output:
+  word_document: default
+  html_document: default
+---
+```{r}
+
+load("cabritus.Rdata")
+#para escuchar el sonido:
+tuneR::play(cabritus)
+
+#nuestros datos en forma de vector:
+cabritus <- cabritus@left
+
+
+```
+
+```{r}
+#para generar nuestras covariables, en este caso las series de Fourier:
+X<-matrix(nrow=19764,ncol=10000)
+x<-2*pi*(1:19764)/19764
+for(i in 1:5000){
+X[,(i-1)*2+1]<-sin(i*x)
+X[,i*2]<-cos(i*x)
+}
+```
+
+
+```{r}
+#Vamos a guardar la matriz de covariables ya que es un archivo pesado que va a ser usado recurrentemente:
+save(freq.amp, file="Freq.amp.RData")
+
+```
+
+
+```{r}
+load("Freq.amp.RData")
+datos <- as.data.frame(freq.amp)
+
+datos$cabritus <- cabritus
+```
+
+
+
+
+RIDGE REGRESSION
+```{r}
+library(MASS)
+## En primer lugar creamos nuestro modelo
+modelo1 <- lm(cabritus~.,data = datos)
+
+
+## A continuación creamos un vector para nuestras lambdas
+ridge.lambdas <- 10^seq(0,10, length = 1000)
+
+
+## Creamos ridge
+ridge <- lm.ridge(cabritus~ ., data = datos, lambda = ridge.lambdas)
+
+## A continuación vamos a representar gráficamente el Ridge path, incluyendo también el valor de parámetro óptimo de penalización:
+{plot(log(ridge.lambdas), coef(ridge)[, 2], type = "l", ylab = "Coeficientes",xlab = "log(lambda)", ylim = range(coef(modelo1)[-1]), col = 2)
+for (i in 2:ncol(datos)) 
+{lines(log(ridge.lambdas), coef(ridge)[, i], col = i)}
+abline(v = log(ridge.lambdas[which.min(ridge$GCV)]))}
+#siendo which.min(ridge$GCV) el parámetro óptimo de penalización.
+```
+```{r}
+#Una vez llegados a este punto, podemos intentar hacer predicciones.
+
+ridge.predict <- cbind(as.matrix(datos[,-877]))%*%matrix(coef(ridge)[which.min(ridge$GCV),-877])
+
+plot(ridge.predict, type = "l", xlab="", ylab="predicción")
+```
+```{r}
+#Ahora se comprobará el RMSE en la web de cabritus:
+
+write.table(ridge.predict, "ridge.predict.csv", row.names = FALSE)
+
+#El valor de RMSE obtenido es de 5865.8774.
+```
+
+
+
+
+
+
+
+
+LASSO
+```{r}
+library(lars)
+#Primero creamos nuestro nuevo modelo
+modelo2 <- lm(cabritus~., data=datos)
+
+#Ahora creamos una matriz de diseño para el propio modelo
+matriz <- as.matrix(datos[,-877])
+
+#Finalmente ajustamos el modelo
+modelo.lasso <- lars(x = matriz, y = datos$cabritus)
+
+
+
+{plot(log(modelo.lasso$lambda), coef(modelo.lasso)[-1, 1], type = "l", ylim =
+range(coef(modelo2)[-1]), ylab = "Coeficientes", xlab = "log(lambda)")
+for(i in 1:876)
+{lines(log(modelo.lasso$lambda), coef(modelo.lasso)[-877, i], type = "l", col
+= i)}
+points(rep(tail(log(modelo.lasso$lambda), 1), 876), coef(modelo2)[-877], col
+= 1:876)}
+```
+```{r}
+#En este caso, para elegir el parámetro ópitmo de penalización, haremos lo siguiente:
+
+lasso.lambdas <- 10^seq(0, -1, length = 1000)
+
+modelo.lasso.cvlars <- cv.lars(x = matriz, y = datos$cabritus, index = lasso.lambdas)
+```
+```{r}
+#Para saber el resultado numérico (no gráfico) del valor óptimo de penalización:
+lasso.lambdas[which.min(modelo.lasso.cvlars$cv)]
+```
+```{r}
+#Conlcuimos entonces que la fracción más óptima de lambdas con la que deberíamos quedarnos  sería del 82.96%.
+```
+
+
+```{r}
+#Volvemos de nuevo a intentar hacer predicciones, en este caso Lasso:
+
+lasso.predict <- predict(modelo.lasso, newx=matriz)
+
+
+#Y calculamos los coeficientes de todos los modelos Lasso:
+
+lasso.coefs <- coef(modelo.lasso)
+
+
+#Coeficientes del modelo óptimo según la validación cruzada:
+
+fractions <- apply(coef(modelo.lasso), 1, function(x){sum(abs(x))}) / sum(abs(coef
+(modelo.lasso)[-1, ][length(modelo.lasso$lambda), ]))
+
+
+fit <- lasso.coefs[which.min( abs(lasso.lambdas[which.min(modelo.lasso.cvlars$cv)] - fractions)), ]
+
+
+#También vamos a excluir aquellos coeficientes que sean iguales a 0
+length(fit[fit != 0])
+```
+```{r}
+#Y como vemos, nos quedamos con 761 variables del total. Si queremos representar gráficamente nuestra nueva onda sonora:
+
+plot(1:19764,lasso.predict$fit[,which.min(abs(fractions-lasso.lambdas[which.min(modelo.lasso.cvlars$cv)]))], type = "l", ylab = "y", xlab="x")
+```
+```{r}
+#Vemos como hemos conseguido disminuir el ruido con respecto a la onda sonora original.
+```
+
+COMPROBACIONES
+```{r}
+#A continuación, vamos a crear las predicciones a partir de los resultados anteriores, comprobando cada una de ellas en la web de cabritus:
+
+#Empezaremos con el mejor modelo estimado, para luego probar con valores cercanos y reducir la búsqueda:
+lasso.predict_1<- lasso.predict$fit[,which.min(abs(fractions-lasso.lambdas[which.min(modelo.lasso.cvlars$cv)]))]
+
+write.csv(lasso.predict_1, "modelo_lasso1.csv", row.names = FALSE)
+#Nos devuelve un RMSE de 
+
+
+
+lasso.predict_2 <- lasso.predict$fit[,600]
+write.csv(lasso.predict_2, "modelo_lasso2.csv", row.names = FALSE)
+#Nos devuelve un RMSE de 
+
+
+
+lasso.predict_3 <- lasso.predict$fit[,700]
+write.csv(lasso.predict_3, "modelo_lasso3.csv", row.names = FALSE)
+#Nos devuelve un RMSE de 
+
+
+
+lasso.predict_4 <- lasso.predict$fit[,720]
+write.csv(lasso.predict_4, "modelo_lasso4.csv", row.names = FALSE)
+
+
+
+
+lasso.predict_5 <- lasso.predict$fit[,650]
+write.csv(lasso.predict_5, "modelo_lasso5.csv", row.names = FALSE)
+
+
+
+
+lasso.predict_6 <- lasso.predict$fit[,690]
+write.csv(lasso.predict_6, "modelo_lasso6.csv", row.names = FALSE)
+
+
+
+
+lasso.predict_7 <- lasso.predict$fit[,715]
+write.csv(lasso.predict_7, "modelo_lasso7.csv", row.names = FALSE)
+
+
+
+
+lasso.predict_8 <- lasso.predict$fit[,750]
+write.csv(lasso.predict_8, "modelo_lasso8.csv", row.names = FALSE)
+
+
+
+
+lasso.predict_9 <- lasso.predict$fit[,710]
+write.csv(lasso.predict_9, "modelo_lasso9.csv", row.names = FALSE)
+```
+
+

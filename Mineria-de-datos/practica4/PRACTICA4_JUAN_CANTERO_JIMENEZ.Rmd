@@ -1,0 +1,39 @@
+---
+title: "Práctica 4"
+author: "Juan Cantero Jimenez"
+date: "2/13/2022"
+output: pdf_document
+---
+
+## Tarea 3  
+
+Primero cargamos los datos
+
+```{r}
+load("ComparaPanMolde.RData")
+```
+
+
+### 1. Realiza un MDS no métrico sobre estos datos y representa gráficamente (en dos dimensiones) a partir de los resultados obtenidos los 10 tipos de pan.  
+
+```{r}
+mds <- MASS::isoMDS(dist.pan)
+```  
+```{r}
+coordenadas <- mds$points
+coordenadas <- data.frame(coordenadas, pan.variables, stringsAsFactors = TRUE)
+library(ggplot2)
+ggplot(coordenadas, aes(x=X1, y=X2)) + geom_point(aes(size=Duracion, shape=Tipo, color=Marca))
+```
+
+### 2. A la vista del gráfico anterior, explica qué marcas de pan consideras más próximas entre sí y cuáles se distinguen más de las demás. Puedes apoyarte en las variables que se adjuntan para interpretar si ayudan a explicar la proximidad entre ellos.  
+
+Las marcas que mas se parecen entre ellas son MC1 Y MC2, y la MB es la mas distinta a las demás, tambien es interesante ver como esta última marca posee la mayor disimilaridad dentro del grupo. 
+
+### 3. Analiza y explica la bondad del ajuste que hemos obtenido tras la aplicación de esta técnica en estos datos.
+
+```{r}
+mds$stress/100
+```  
+
+El parámetro de Stress ha sido pasado a tanto por uno para poder ser interpretado por los criterios de Kruskal. Como se puede observar el valor es de 0.10, lo que en función de estos criterios denota un MDS no métrico aceptable. 

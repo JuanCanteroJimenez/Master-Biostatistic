@@ -1,0 +1,100 @@
+---
+title: "Examen - Planificación de la Investigación"
+author: "Juan Cantero Jimenez"
+date: "2/24/2022"
+output: pdf_document
+---
+
+## Lectura de datos
+
+```{r}
+load("cultiv.Rdata")
+```
+
+```{r}
+str(cultiv)
+cultiv$oveja <- as.factor(cultiv$oveja)
+str(cultiv)
+```  
+
+## Ejercicio 1
+
+La variable de interes sería el conteo de células/ml al cabo de 24 horas en función de las distintas matrices, adémas esta distintas matrices son factores fijos de los que queremos estudiar como afectan al conteo de células/ml al cabo de 24 horas. Pór útlimo como solo estamos interesados en conocer como afectan las distintas matrices al crecimiento celular pero sospechamos que la oveja de donde proceda la muestra puede tener un efecto, esta última se considerára como un bloque. Esto pérmitira poder estudiar la base idónea para maximizar el crecimiento de CS sin que se vea afectado por la variabilidad aportada por las distintas muestras. 
+
+## Ejercico 2
+
+En este caso tenemos un diseño experimental de un factor fijo y un bloque, es decir Randomiced compleete block, RCB. 
+
+El modelo estadístico sería el siguiente: 
+
+$recuento_{i} = \mu + \beta_{M, MG}*I(M = MG)  + \beta_{M, FN}*I(M = FN) + \beta_{M, SSTF}*I(M = SSTF) + \beta_{O, 1}*I(O = 1) + \beta_{O, 2}*I(O = 2) + \beta_{O, 3}*I(O = 3)  + \beta_{O, 4}*I(O = 4)  + \beta_{O, 5}*I(O = 5)$
+
+Notese que la función indicadora $I(M = MG)$ valdrá 1 cuando la observación pertenezca al nivel MG y valdra 0 si es distinta de este, lo mismo se aplica a las otras funciones indicadoras con los distintos niveles. 
+
+Las restricciones para este modelo son:
+
+$\sum \beta_{m} = \sum \beta_{O} = 0$
+
+Donde $\mu$ representa la media global así como M y O, matriz y oveja respectivamente. 
+
+
+```{r}
+aov1 <- aov(recuento ~ matriz + oveja, data=cultiv)
+summary(aov1)
+```
+
+```{r}
+plot(aov1)
+```  
+
+Para que el modelo sea aplicable los residuos deben de comportarse de forma normal así como la varianza entre los grupos deve de ser homogénea. Así si observamos el qqplot mostrado anteriormente podremos ver como los percentiles muestrales coinciden en mayor o menor medida con los percentiles muestrales por lo que podemos concluir en base a estos gráficos que el modelo sigue una distribución normal. Si atendemos ahora a la igualdad de varianza, en el plot de Residual vs Fitted así como Scale-Location se puede ver como la nube de puntos se distribuye de forma homogenea por lo que se puede concluir que la varianza entre los grupos es homogénea.  
+
+
+## Ejercico 3
+
+```{r}
+model.tables(aov1, type="effects")
+mean(cultiv$recuento)
+```  
+Así los coeficientes para el modelo
+
+$recuento_{i} = \mu + \beta_{M, MG}*I(M = MG)  + \beta_{M, FN}*I(M = FN) + \beta_{M, SSTF}*I(M = SSTF) + \beta_{O, 1}*I(O = 1) + \beta_{O, 2}*I(O = 2) + \beta_{O, 3}*I(O = 3)  + \beta_{O, 4}*I(O = 4)  + \beta_{O, 5}*I(O = 5)$
+
+son $\mu = media\;global = 3709.467$, $\beta_{M, FN} = -100.07$, $\beta_{M, MG} = 287.33$, $\beta_{M, SSTF} = -187.27$,
+$\beta_{O, 1} = 126.87$, $\beta_{O, 2} = -119.87$, $\beta_{O, 3} = -242.13$, $\beta_{O, 4} = -45.13$, $\beta_{O, 5} = 40.53$
+
+## Ejercicio 4  
+
+```{r}
+summary(aov1)
+```  
+
+Como se puede observar, en la tabla resumen anterior, el efecto de la matriz sobre el recuento de celulas es significativo con un p-valor = 0.017. Esto significa que la hipótesis nula de igualdad entre las medias de los distintos niveles del factor matriz se ha rechazado con un nivel de significación del 0.05. Así se puede concluir que la matriz tiene un efecto sobre el crecimiento de células satélite de oveja.
+
+```{r}
+TukeyHSD(aov1, which = "matriz")
+```
+Si observamos el test a posteriori de tipo Tukey que se ha realizado, podremos ver como se comparan los grupos entre ellos, notese que con un análisis ANOVA solo se puede observar si existe diferencia entre las medias de los tres tipos de matriz no aportandose información de como se relaciónan los grupos entre sí. Así podemos observar como la media del nivel MG y el FN poseen diferencias estadísticamente significativas, de igual forma SSTF y MG tambien presentan diferencias estadisticamente significativas en sus medias y por útlimo entre SSTF y FN no se han encontrado diferencias estadísticamente significativas. 
+
+
+## Ejercicio 5
+
+Teniendo en cuenta que $\sigma^{2} = 45111$ podemos calcular la potencia del test para detectar una diferencia de $\delta = 400\;cel/ml$ como:
+
+```{r}
+library(daewr)
+blocks <- 5
+alpha <- 0.05
+Sigma <- sqrt(45111) #en este caso mmE de aov1
+JJ <- 3
+Delta <- 400
+nu1 <- JJ-1
+nu2 <- (JJ-1)*(blocks-1)
+nc <- (blocks * Delta^2)/(2*Sigma^2)
+Power <- Fpower(alpha, nu1, nu2, nc)
+
+```
+
+
+
+

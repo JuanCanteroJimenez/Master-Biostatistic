@@ -1,0 +1,114 @@
+---
+title: "Practica 3"
+author: "Juan Cantero Jimenez"
+date: "2/20/2022"
+output: pdf_document
+---
+
+## 1
+
+```{r}
+library(ISLR)
+data(Auto)
+```
+
+```{r}
+cor.test(Auto$mpg, Auto$horsepower)
+plot(Auto$mpg, Auto$horsepower)
+```  
+Aunque el coeficiente de correlación de Pearson arroja un valor distinto de 0 de forma significativa, si obsevamos el scatter plot de Auto\$mpg vs Auto\$horsepower, podemos ver como esta relación tiene cierto comportamiento no lineal. 
+
+```{r}
+model1 <- with(Auto, lm(mpg ~ horsepower))
+summary(model1)
+with(Auto, plot(horsepower, mpg))
+lines(46:230, predict(model1, data.frame(horsepower=46:230)), col="red")
+```  
+
+La relación entre horsepower y mpg es negativa, y indica que por cada aumento en una unidad de horsepower, el mpg se reduce en 0.157845
+
+```{r}
+confint(model1 )
+```
+
+Puesto que el intervalo de confianza al 95% no contiene el valor 0, se puede considerar que la relación entre los valores es distinta de 0
+
+```{r}
+predict(model1, data.frame(horsepower=98 ), interval = "confidence")
+predict(model1, data.frame(horsepower=98), interval = "prediction")
+```
+```{r}
+with(Auto, plot(horsepower, mpg))
+lines(40:200, predict(model1, data.frame(horsepower=40:200)), col="red")
+lines(40:200, predict(model1, data.frame(horsepower=40:200), interval = "prediction")[,2], col="blue")
+lines(40:200, predict(model1, data.frame(horsepower=40:200), interval = "prediction")[,3], col="blue")
+lines(40:200, predict(model1, data.frame(horsepower=40:200), interval = "confidence")[,2], col="green")
+lines(40:200, predict(model1, data.frame(horsepower=40:200), interval = "confidence")[,3], col="green")
+```
+
+## 2 
+
+```{r}
+model2 <- with(Auto, lm(mpg ~ year))
+summary(model2)
+with(Auto, plot(year, mpg))
+lines(70:82, predict(model2, data.frame(year=70:82)), col="red")
+confint(model2 )
+predict(model2, data.frame(year=81 ), interval = "confidence")
+predict(model2, data.frame(year=81), interval = "prediction")
+with(Auto, plot(year, mpg))
+lines(70:82, predict(model2, data.frame(year=70:82)), col="red")
+lines(70:82, predict(model2, data.frame(year=70:82), interval = "prediction")[,2], col="blue")
+lines(70:82, predict(model2, data.frame(year=70:82), interval = "prediction")[,3], col="blue")
+lines(70:82, predict(model2, data.frame(year=70:82), interval = "confidence")[,2], col="green")
+lines(70:82, predict(model2, data.frame(year=70:82), interval = "confidence")[,3], col="green")
+
+```
+
+## 3 
+
+```{r}
+Auto$invhorsepower <- 1/Auto$horsepower
+```
+
+
+
+```{r}
+model3 <- with(Auto, lm(mpg ~ invhorsepower))
+summary(model3)
+with(Auto, plot(invhorsepower, mpg))
+lines(seq(0.001, 0.02, 0.0001), predict(model3, data.frame(invhorsepower=seq(0.001, 0.02, 0.0001))), col="red")
+confint(model3 )
+predict(model3, data.frame(invhorsepower=0.018 ), interval = "confidence")
+predict(model3, data.frame(invhorsepower=0.018), interval = "prediction")
+with(Auto, plot(invhorsepower, mpg))
+lines(seq(0.001, 0.02, 0.0001), predict(model3, data.frame(invhorsepower=seq(0.001, 0.02, 0.0001))), col="red")
+lines(seq(0.001, 0.02, 0.0001), predict(model3, data.frame(invhorsepower=seq(0.001, 0.02, 0.0001)), interval = "prediction")[,2], col="blue")
+lines(seq(0.001, 0.02, 0.0001), predict(model3, data.frame(invhorsepower=seq(0.001, 0.02, 0.0001)), interval = "prediction")[,3], col="blue")
+lines(seq(0.001, 0.02, 0.0001), predict(model3, data.frame(invhorsepower=seq(0.001, 0.02, 0.0001)), interval = "confidence")[,2], col="green")
+lines(seq(0.001, 0.02, 0.0001), predict(model3, data.frame(invhorsepower=seq(0.001, 0.02, 0.0001)), interval = "confidence")[,3], col="green")
+```
+
+## 4
+
+Si, esto se puede demostrar pues beta1 gorro, es igual al coeficiente de correlación lineal por la desviación tipica de Sy e Sx ambas positivas
+
+Si, pues la longitud de este intevalo se relacióna de forma inversa con el tamaño de la muestra. 
+
+Si, pues 
+```{r}
+Auto$invhorsepower <- 1/Auto$horsepower
+modelo3 <- lm(mpg ~ invhorsepower, data = Auto)
+with(Auto, plot(horsepower, mpg))
+x <- 40:250
+lines(x, predict(modelo3, newdata = data.frame(invhorsepower = 1/x)), col = 2)
+confianza <- predict(modelo3, newdata = data.frame(invhorsepower = 1/x),
+interval = c("confidence"))
+lines(x, confianza[, 2], col = "blue")
+lines(x, confianza[, 3], col = "blue")
+predi <- predict(modelo3, newdata = data.frame(invhorsepower = 1/x), interval = c("prediction"))
+lines(x, predi[, 2], col = "green")
+lines(x, predi[, 3], col = "green")
+```
+
+

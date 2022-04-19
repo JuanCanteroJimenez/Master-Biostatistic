@@ -1,0 +1,112 @@
+---
+title: "Practica 2"
+author: "Juan Cantero Jimenez"
+date: "1/30/2022"
+output: pdf_document
+---
+
+
+
+## Tarea 3
+
+Recuperamos el banco de datos de la práctica 1 que encontrarás en el fichero datos__prac1__ok.RData.
+Recuerda que las dos primeras variables simplemente identifican cada provincia con su código y su nombre. 
+
+### a. Calcula las desviaciones típicas de las variables cuantitativas del banco de datos. Responde, a la vista del significado de las variables y del resultado anterior, si consideras que se debería realizar el análisis de componentes principales con la matriz de varianzas-covarianzas o con la de correlaciones.
+
+
+```{r}
+describe_custom <- function(data){
+  require(e1071)
+  result <- apply(data, 2, function(x){
+    
+    
+    c(media=mean(x),
+      mediana=median(x),
+      varianza = var(x),
+      des_tipic = sd(x),
+      skew = e1071::skewness(x),
+      kurto = e1071::kurtosis(x),
+      maximo = max(x),
+      minimo = min(x),
+      rango = max(x)- min(x),
+      quantile(x , 0.25 ),
+      quantile(x, 0.50),
+      quantile(x, 0.75),
+      shapiro_pvalor = shapiro.test(x)$p.value)
+    
+  })
+  return(result)
+}
+
+load("datos_prac1_ok.RData")
+cod_nombre <- datos.p1[, 1:2]
+datos.p1 <- datos.p1[,-(1:2)]
+numeric_des <- describe_custom(datos.p1)
+numeric_des
+
+```
+
+Será necesario el uso de la matriz de correlaciones debido a que existe una gran diferencia de escala en los datos, tanto en valor absoluto como de varianzas.
+
+### b. Realiza un Análisis de Componentes Principales sobre este banco de datos en el modo en el que hayas justificado en el primer apartado y responde las siguientes preguntas:
+
+```{r}
+pca <- princomp(datos.p1, cor=TRUE)
+summary(pca)
+```
+
+#### 1. ¿Qué porcentaje de varianza del banco de datos original explica la primera componente principal? ¿Y la segunda?.  
+Respectivamente el 0.319432 y 0.20468448.  
+
+#### 2. ¿Con cuántas componentes principales nos deberíamos quedar si queremos mantener al menos el 90% de la varianza del banco de datos orignal?  
+
+Serán necesarias las 7 primeras componentes principales para recoger un 90 % de la variabilidad.
+
+#### 3. Intenta interpretar de forma breve el significado de la primera componente principal.
+
+  
+  
+```{r}
+loads <- as.matrix(pca$loadings)
+colors <- rep("grey", nrow(loads))
+colors[loads[,1] > 0.1] <- "red"
+colors[loads[,1] < -0.1] <- "blue"
+par(mar= c(5.1, 14.1, 4.1, 2.1))
+barplot(loads[,1],horiz = T,las=1,main = "Loads primera componente principal", col=colors) 
+```  
+
+En el gráfico anterior se han representado aquellas variables que superan una carga de 0.1 en rojo, las que son menores a -0.1 en azul y las demás en gris. Aquellas observaciones que posean un valor absoluto alto en las variables PorcParoConstruccion, PorcParoIndustria, EsperanzaVidaM2018, EsperanzaVidaH2018, TasaBrutaMortalidad, EdadMedia2018 y PorcMayores65_2018 poseeran un valor positivo en esta componente. A su vez, aquellas que posean un valor absoluto alto en PorcParoOtros, PorParoServicios, TasaMortalidadMenores5anyos y TBNatalidad2018 podran recibir un valor negativo en esta primera componente. Debido a la heterogeneidad de las variables, no veo conveniente aportar una interpretación más holística a la componente. 
+
+#### 4. Intenta interpretar de forma breve el significado de la segunda componente principal.
+
+  
+  
+```{r}
+colors <- rep("grey", nrow(loads))
+colors[loads[,2] > 0.1] <- "red"
+colors[loads[,2] < -0.1] <- "blue"
+par(mar= c(5.1, 14.1, 4.1, 2.1))
+barplot(loads[,2],horiz = T,las=1,main = "Loads segunda componente principal", col=colors) 
+```
+
+Como se puede ver en la figura anterior, esta componente principal dará valores positivos altos a aquellas observaciones que posean una población no envejecida, con un alto porcentaje de población extranjera. Además esto se vera acrecentado si la observación posee una alta esperanza de vida y una alta población total.  
+
+#### 5. Representa todas las provincias en un gráfico según las dos primeras componentes principales y comenta el resultado, resaltando las que tengan algún comportamiento que te llame la atención (por ejemplo, las más extremas en alguna de las dos primeras componentes). Puedes utilizar las Comunidades Autónomas a las que pertencen (la relación está disponible entre los ficheros de la práctica 1) para marcar en diferentes colores, por ejemplo, las provincias de cada comunidad, y así comprobar si aparecen cercanas en el gráfico.  
+
+```{r}
+comunidades_provincias <- read.csv("ComunidadesProvincias.csv",sep = ";",encoding="latin1")
+
+cod_nombre_color <- t(apply(cod_nombre, 1, function(x, y){
+  c(CodProv=as.numeric(x[1]), x[2], CCAA=y[, "CCAA"][y[,"Cprov"]==as.numeric(x[1])])
+}, y = comunidades_provincias))
+
+cod_nombre_color <- as.data.frame(cod_nombre_color)
+gather <- data.frame(comp1 = pca$scores[,1], comp2 = pca$scores[,2],
+                     coloring = factor(cod_nombre_color$CCAA))
+library(ggplot2)
+ggplot(data=gather, aes(x=comp1, y=comp2, col=coloring))+geom_point()
+
+```
+
+En la imagen anterior se puede observar como las ciudades autónomas de Ceuta y Melilla se encuentran alejadas del resto de comunidades autónomas. Esto se da princpalmente debido al valor que poseen en la primera componente principal en la que poseen un alto valor negativo, el valor de la segunda componente es similar al resto de comunidades autónomas. Este comportamiento puede deberse a que posean un alto valor en las variables, PorcParoOtros, PorcParoServicios TasaMortalidadMenores5anyos y TBNatalidad2018. 

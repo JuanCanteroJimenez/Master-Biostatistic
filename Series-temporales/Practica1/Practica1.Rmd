@@ -1,0 +1,196 @@
+---
+title: "Práctica 1"
+author: "Juan Cantero Jimenez"
+date: "3/25/2022"
+output: pdf_document
+---
+
+# 1 Introducción.
+
+En el presente trabajo se ejemplifica un análisis básico de series temporales usando como ejemplo una que describe las exportaciones totales de Austria en el periodo 1999-2020 a la Unión Europea. Se presentan distintas representaciones gráficas así como análisis numéricos de la serie original y de sus principales componentes. 
+
+# 2 Analisis de los datos.
+
+## 2.1 Lectura de los datos y representación gráfica. 
+
+```{r}
+austria <- read.csv2("AustriaT.csv")
+austriat <- ts(austria, start = c(1999, 1), frequency = 12)
+```
+
+Puesto que se conoce el fechado exacto de la serie, desde enero de 1999 hasta diciembre de 2020 de forma mensual, se puede comprobar la correcta introducción de la serie en R haciendo uso de la siguientes funciones
+
+```{r}
+start(austriat) ## Fechado del primer dato
+end(austriat) ## Fechado del último dato
+frequency(austriat) ## Frecuencia de los datos
+head(time(austriat), n = 36) ## Muestra como R guarda internamente el fechado
+head(cycle(austriat), n = 36) ## Muestra un vector con el periodo estacional de
+## cada dato
+```  
+
+Se puede concluir que la serie ha sido introducida en R de forma correcta.  
+
+La representación gráfica de la serie se puede obtener haciendo uso de la función autoplot del paquete forecast
+```{r, fig.width=10, fig.height=2.5}
+library(forecast)
+autoplot(austriat,
+           xlab="",
+           ylab="Exportaciones (millones de euros)",
+            main = "Figura 1. Exportaciones totales de Austria a la UE27")
+```
+Si se observa la figura 1, se puede apreciar como existe una clara tendencia creciente en el volumen de la exportaciones totales de Austria hacia la UE27 en millos de euros. Además se puede observar como existe un descenso brusco de las exportaciones alrededor de los años 2008-2010, seguida de una rápida recuperación de estas. Además, se puede observar un descenso pronunciado, aunque no tanto como el anterior, alrededor del año 2020. Más adelante se profundizará en estos eventos con mayor detalle.  
+
+
+## 2.2 Componentes de una serie temporal y su combinación.
+
+### 2.2.1 Esquema de la serie.
+
+Antes de entrar en la descripción de los distintos componentes de la serie temporal que se esta analizando, será necesario vislumbrar el tipo de esquema de la serie. Este hace referencia a como se combinan las distintas componentes de la serie temporal para generar esta. El esquema de una serie temporal puede ser aditivo y así cada componente suma su efecto sobre los demás mientras que en un esquema multiplicativo cada componente supone un incremento porcentual respecto de los demás. El tipo de esquema de la serie se puede apreciar si se representa la variabilidad en función de los datos agregados.
+
+```{r}
+expanuales = aggregate(austriat, FUN = sum)
+desviacionanual = aggregate(austriat, FUN = sd)
+
+plot(x=as.vector(expanuales),
+     y=as.vector(desviacionanual),
+     xlab = "Exportaciones anuales",
+     ylab = "Des. Tip. Intra-anual",
+     main = "Figura 2. Exportaciones anuales vs Des. Tip. Intra-anual")
+
+```  
+
+Si se observa la figura 2, se puede apreciar como la variabilidad de las observaciones agrupadas anualmente aumenta al incrementarse las exportaciones anuales. Este comportamiento en el que la variabilidad de las observaciones agrupadas es dependiente del valor medio de la serie, suele corresponderse con esquemas multiplicativos. 
+
+### 2.2.2 Tendencia.  
+
+La tendencia de una serie hace referencia a su comportamiento a largo plazo, describiendo los cambios sistemáticos de la serie temporal que no posean periodicidad. Respecto de la dirección del movimiento la tendencia puede ser creciente, decreciente o estacionaria y respecto al tipo de pendiente (en función de su similaridad con funciones elementales) se pueden encontrar tendencias lineales, exponenciales y logarítmicas. 
+
+Para extraer la tendencia de una serie será necesario agregar los datos, puesto que tenemos una serie mensual, se agregará hasta convertirla en una anual, lo que permite eliminar las fluctuaciones estacionales. La función que se aplica a los datos agrupados variara en función del objetivo perseguido, a continuación se usara la función sum y mean. 
+
+```{r, fig.width=10, fig.height=2.5}
+par(mfrow=c(2, 1))
+austriatanuals <- aggregate(austriat, FUN = sum) ## Agregamos haciando la suma
+## anual
+autoplot(austriatanuals,
+         xlab="",
+         ylab="Exportaciones (millones de euros)",
+         main = "Figura 3. Exportaciones anuales de Austria a la UE27")
+
+austriatanualm <- aggregate(austriat, FUN = mean)
+autoplot(austriatanualm,
+         xlab="",
+         ylab="Exportaciones medias anuales (millones de euros)",
+         main = "Figura 4. Exportaciones anuales medias de Austria a la UE27")
+
+```  
+
+Se puede observar como las figuras 3 y 4 ofrecen una representación similar de la tendencia, aunque la interpretación sea distinta. En base a estos resultados se puede concluir que la tendencia de esta serie es creciente y lineal. 
+
+La tendencia de una serie puede ser obtenida también por métodos más sofisticados. A continuación se usara la descomposición por medias móviles
+
+```{r, fig.width=10, fig.height=2.5}
+austriatdescmult <- decompose(austriat, type = "mult")
+autoplot(austriatdescmult$trend,
+         xlab = "",
+         ylab = "Tendencia",
+         main = "Figura 5. Tendencia de AustriaT por medias moviles")
+```  
+De nuevo, si se atiende a la figura 5, se podrá observar una tendencia creciente y lineal.  
+
+Por último se utilizará la metodología de regresiones locales ponderadas. En este caso será necesario transformar previamente la serie a un esquema aditivo aplicando el logaritmo dado que esta metodología solo se puede usar para este tipo de esquema. Tras aplicar el algoritmo, se deshace la transformación aplicando la función exponencial a los resultados.  
+
+```{r, fig.width=10, fig.height=2.5}
+dim(austriat) <- NULL
+austriatstl <- stl(x = log(austriat), s.window = "periodic", robust = TRUE)
+autoplot(exp(austriatstl$time.series[,"trend"]),
+         xlab = "",
+         ylab = "Tendencia",
+         main = "Figura 6. Tendencia de AustriaT por regresores locales ponderados")
+
+```  
+Se vuelve a obtener una tendencia creciente y de tipo lineal. Respecto al resultado obtenido por medias móviles, se puede apreciar como la linea de tendencia obtenida por este método es ligeramente más abrupta que la obtenida por regresiones locales ponderadas. Es decir el resultado de la descomposición por medias móviles arroja una linea de tendencia menos suave que la obtenida por regresiones locales ponderadas.
+
+### 2.2.3 Ciclo.
+
+El ciclo de una serie temporal hace referencia a patrones sin periodicidad fija que abarca varios años. Si se presta atención a la figura 1, se puede concluir que la serie temporal no tiene ciclo. Esto puede ser debido a que la longitud de la serie no es lo suficientemente larga como para observar un ciclo completo, quedando parte de este recogido en la tendencia de la serie. 
+
+
+### 2.2.4 Estacionalidad.
+
+La estacionalidad de una serie temporal describe patrones repetitivos de periodicidad fija e inferior al año. Puesto que la serie austriat tiene una frecuencia mensual, el orden de la periodicidad sera 12. 
+
+La estacionalidad puede ser analizada de forma gráfica o numérica. A continuación se muestra en la figura 7 un gráfico estacional de subseries. 
+
+```{r, fig.width=10, fig.height=2.5}
+library(ggplot2)
+
+ggsubseriesplot(austriat) +
+  ylab("Exportaciones (millones de euros)") +
+  xlab("") +
+  ggtitle("Figura 7. Gráfico estacional de subseries")
+
+```  
+Si se observa la figura 7, se podrá apreciar como existe un descenso en las exportaciones en los meses de Agosto y Diciembre. Este descenso puede ser explicado gracias a que por convención Agosto y Diciembre son periodos vacacionales para un gran porcentaje de la población. 
+
+Otra forma de estudiar la estacionalidad es mediante un gráfico estacional de lineas
+
+```{r, fig.width=10, fig.height=2.5}
+ggseasonplot(austriat, 
+             year.labels=TRUE, 
+             xlab = "",
+             ylab = "Exportaciones (millones de euros)",
+             main = "Figura 8. Gráfico estacional de lineas")
+```  
+En este, se puede confirmar lo descrito anteriormente en el que se aprecia un descenso en las exportaciones en los meses de Diciembre y Agosto. En esta figura también se puede apreciar una ligera reducción sistemática en el mes de Abril. Esto puede ser debido a la presencia de ciertas festividades típicas de la región y de la época como El Festival de Pascua de Salzburg o el Festival Schubertiade.
+
+
+
+Además se puede obtener la estacionalidad de forma numérica. Para una serie con tendencia y multiplicativa se calcula para cada mes la media del cociente entre la media del mes y la global. 
+
+```{r}
+componenteEstacional <- tapply(austriat/mean(austriat), 
+                               cycle(austriat), 
+                               FUN = mean)
+round(componenteEstacional, 2)
+
+```  
+En base a los resultados obtenidos podemos concluir que existe una ligera variación estacional en los datos caracterizada por un profundo descenso de las exportaciones de Austria en los meses de Agosto y Diciembre así como por un descenso no tan acuciante en los meses de Enero, Febrero, Abril y Mayo, así como un ligero aumento sobre la media global en los meses de Marzo, Septiembre, Noviembre y Diciembre. 
+
+Por último revisaremos la componente estacional obtenida por los métodos de medias móviles y regresión local ponderada. 
+
+```{r, fig.width=10, fig.height=2.5}
+par(mfrow = c(2,1))
+
+autoplot(austriatdescmult$seasonal,
+         xlab = "",
+         ylab = "Estacionalidad",
+         main = "Figura 9. Estacionalidad de AustriaT por medias moviles")
+
+autoplot(exp(austriatstl$time.series[,"seasonal"]),
+         xlab = "",
+         ylab = "Estacionalidad",
+         main = "Figura 10. Estacionalidad de AustriaT por regresores locales ponderados")
+```  
+
+De nuevo se pueden observar, de forma más dificultosa en estas representaciones, la estacionalidad descrita anteriormente.  
+
+### 2.2.5 Intervención.
+
+Por último se atenderá a la componente conocida como intervención. Esta hace referencia a factores sistemáticos no periódicos o irregulares, que vendría determinados por fenómenos ocasionales que provocan observaciones anómalas y valores atípicos en la serie temporal. Puede ser de tipo permanente, transitorio o en forma de pulso. 
+
+Primero se hablarán de las intervenciones que afectan a periodos de tiempo superiores al mes. Si se atiende a las figuras 1, 3, 4, y 5 entre otras se podrá apreciar como existe un descenso en las exportaciones de Austria en los años 2008, 2009 y 2010 así como uno no tan acuciante que afecta al año 2020. La primera intervención puede deberse a la Crisis Bursátil de 2008 mientras que el segundo puede deberse a la situación excepcional de restricción en la libertad de movimiento producida por la Pandemia de SARS-Cov2.
+
+Por último es necesario destacar como existe un descenso relevante a nivel mensual en los meses de Agosto y Diciembre provocado por la presencia de largos periodos vacacionales en estas épocas del año. 
+
+
+
+
+
+
+
+
+
+
+
+

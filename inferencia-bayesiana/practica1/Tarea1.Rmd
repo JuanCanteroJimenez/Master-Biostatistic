@@ -1,0 +1,226 @@
+---
+title: "Tarea 1"
+author: "Juan Cantero Jimenez"
+date: "2/26/2022"
+output: pdf_document
+---
+
+## Caraga de datos y exploración 
+
+
+```{r}
+data <- read.csv("datos_investigacion.csv")
+```
+
+```{r}
+head(data)
+str(data)
+atrac.2 <- data[which(data$Atractores==2),]
+atrac.3 <- data[which(data$Atractores==3),]
+atrac.4 <- data[which(data$Atractores==4),]
+
+``` 
+```{r}
+par(mfrow=c(1,3))
+hist(atrac.2$L,xlim = c(-10,300),ylim=c(0,60000))
+hist(atrac.3$L,xlim = c(-10,300),ylim=c(0,60000))
+hist(atrac.4$L,xlim = c(-10,300),ylim=c(0,60000))
+```
+
+
+```{r}
+par(mfrow=c(1,3))
+hist(atrac.2$FD)
+hist(atrac.3$FD)
+hist(atrac.4$FD)
+```
+
+```{r}
+
+data$Atractores.factor <- as.factor(data$Atractores)
+```
+
+```{r}
+pairs(data[,c("L", "FD","Atractores")])
+```
+```{r}
+boxplot(L ~ Atractores.factor, data)
+boxplot(FD ~ Atractores.factor, data)
+```
+
+
+## Inferencia sobre 2 atractores
+
+```{r}
+
+n.2 <- nrow(atrac.2)
+#& atrac.2$FD != Inf & atrac.2$FD != -Inf & atrac.2$L != -Inf & atrac.2$L != Inf
+exitos.2 <- length(which(atrac.2$L <= -0.2 & atrac.2$FD >= 1 &  atrac.2$FD != Inf & atrac.2$FD != -Inf & atrac.2$L != -Inf & atrac.2$L != Inf))
+exitos.2
+
+
+```
+
+### Distribución previa
+
+Se ha escogido una distribución previa no informativa
+
+```{r}
+alpha0.2 <- 0.5
+beta0.2 <- 0.5
+curve(dbeta(x, alpha0.2, beta0.2))
+```
+### Distribución a posteriori de la proporción
+
+
+```{r}
+
+alpha.2 <- alpha0.2 + exitos.2
+beta.2 <- beta0.2 + n.2 - exitos.2
+
+### Representación gráfica
+curve(dbeta(x, alpha.2, beta.2))
+
+### Esperanza 
+
+media.2 <- alpha.2 /(alpha.2 + beta.2)
+varianza.2 <- media.2*(1-media.2)/(alpha.2 + beta.2 + 1)
+
+### Intervalo de alta probabilidad
+
+result <- data.frame(low=qbeta(0.025, alpha.2, beta.2),
+                     media=media.2,
+                     upp=qbeta(0.975, alpha.2, beta.2))
+result
+
+
+```
+
+### Inferecia sobre 3 atractores
+
+```{r}
+
+
+n.3 <- nrow(atrac.3)
+#& atrac.3$FD != Inf & atrac.3$FD != -Inf & atrac.3$L != -Inf & atrac.3$L != Inf
+exitos.3 <- length(which(atrac.3$L <= -0.2 & atrac.3$FD >= 1 &  atrac.3$FD != Inf & atrac.3$FD != -Inf & atrac.3$L != -Inf & atrac.3$L != Inf))
+exitos.3
+alpha0.3 <- 0.5
+beta0.3 <- 0.5
+curve(dbeta(x, alpha0.3, beta0.3))
+
+alpha.3 <- alpha0.3 + exitos.3
+beta.3 <- beta0.3 + n.3 - exitos.3
+
+### Representación gráfica
+curve(dbeta(x, alpha.3, beta.3))
+
+### Esperanza 
+
+media.3 <- alpha.3 /(alpha.3 + beta.3)
+varianza.3 <- media.3*(1-media.3)/(alpha.3 + beta.3 + 1)
+
+### Intervalo de alta probabilidad
+
+result <- data.frame(low=qbeta(0.025, alpha.3, beta.3),
+                     media=media.3,
+                     upp=qbeta(0.975, alpha.3, beta.3))
+result
+
+```
+
+
+
+### Inferecia sobre 4 atractores
+
+```{r}
+
+
+n.4 <- nrow(atrac.4)
+#& atrac.4$FD != Inf & atrac.4$FD != -Inf & atrac.4$L != -Inf & atrac.4$L != Inf
+exitos.4 <- length(which(atrac.4$L <= -0.2 & atrac.4$FD >= 1 &  atrac.4$FD != Inf & atrac.4$FD != -Inf & atrac.4$L != -Inf & atrac.4$L != Inf))
+exitos.4
+alpha0.4 <- 0.5
+beta0.4 <- 0.5
+curve(dbeta(x, alpha0.4, beta0.4))
+
+alpha.4 <- alpha0.4 + exitos.4
+beta.4 <- beta0.4 + n.4 - exitos.4
+
+### Representación gráfica
+curve(dbeta(x, alpha.4, beta.4))
+
+### Esperanza 
+
+media.4 <- alpha.4 /(alpha.4 + beta.4)
+varianza.4 <- media.4*(1-media.4)/(alpha.4 + beta.4 + 1)
+
+### Intervalo de alta probabilidad
+
+result <- data.frame(low=qbeta(0.025, alpha.4, beta.4),
+                     media=media.4,
+                     upp=qbeta(0.975, alpha.4, beta.4))
+result
+
+```
+### inferencia sobre proporción 2 / 3 atractores
+
+```{r}
+N <- 1000000
+prop.2 <- rbeta(N, alpha.2, beta.2)
+prop.3 <- rbeta(N, alpha.3, beta.3)
+result.2.3 <- prop.2/prop.3
+hist(result.2.3)
+mean(result.2.3)
+var(result.2.3)
+plot(density(result.2.3))
+confidence <- data.frame(low = quantile(result.2.3, c(0.025)),
+                         media = mean(result.2.3),
+                         upp = quantile(result.2.3, c(0.975)))
+confidence
+```
+
+### inferencia sobre proporción 2 / 4 atractores
+
+```{r}
+N <- 1000000
+prop.2 <- rbeta(N, alpha.2, beta.2)
+prop.4 <- rbeta(N, alpha.4, beta.4)
+result.2.4 <- prop.2/prop.4
+hist(result.2.4)
+mean(result.2.4)
+var(result.2.4)
+plot(density(result.2.4))
+confidence <- data.frame(low = quantile(result.2.4, c(0.025)),
+                         media = mean(result.2.4),
+                         upp = quantile(result.2.4, c(0.975)))
+confidence
+```
+
+### inferencia sobre proporción 3 / 4 atractores
+
+```{r}
+N <- 1000000
+prop.3 <- rbeta(N, alpha.3, beta.3)
+prop.4 <- rbeta(N, alpha.4, beta.4)
+result.3.4 <- prop.3/prop.4
+hist(result.3.4)
+mean(result.3.4)
+var(result.3.4)
+plot(density(result.3.4))
+confidence <- data.frame(low = quantile(result.3.4, c(0.025)),
+                         media = mean(result.3.4),
+                         upp = quantile(result.3.4, c(0.975)))
+confidence
+```
+
+
+
+
+
+
+```{r}
+plot(atrac.2$L[atrac.2$L < -0.2], atrac.2$FD[atrac.2$L < -0.2])
+atrac.2[atrac.2$L < -0.9 & atrac.2$FD > 1.8,]
+```
+

@@ -1,0 +1,656 @@
+\documentclass[11pt]{article}
+
+\usepackage{graphicx}
+\usepackage{svg}
+\usepackage{graphbox}
+\usepackage{multicol}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{mathtools}
+\usepackage{pgfplots}
+\usepackage{cancel}
+\usepackage{xcolor,colortbl}
+\usepackage[colorlinks=true, allcolors=blue]{hyperref}
+\usepackage{setspace}
+
+\usepackage{enumitem}
+\setlist{  
+  listparindent=\parindent,
+  parsep=0pt,
+}
+
+\oddsidemargin=-.3in
+\evensidemargin=-.5in
+\textwidth=7in
+\topmargin=-1in
+\textheight=9.7in
+
+\parindent=.3in
+\pagestyle{plain}
+
+\definecolor{Gray}{gray}{0.9}
+\definecolor{Yellow}{rgb}{255,255,0}
+\newcolumntype{y}{>{\columncolor{Yellow}}c}
+
+\allowdisplaybreaks
+
+\newenvironment{problems}
+{
+\begin{enumerate}
+\renewcommand{\labelenumi}{ {\bf \arabic{enumi}}.}
+
+\setlength{\itemsep}{0.5em}
+}
+{
+\end{enumerate}
+}
+
+
+
+
+
+
+\usepackage{Sweave}
+\begin{document}
+\input{hello-concordance}
+
+
+
+\begin{centering}
+{\huge \bf Práctica 1} \smallskip
+
+{\Large \em Minería de datos
+
+Juan Cantero Jimenez
+
+16 de enero, 2022
+
+}
+\end{centering}
+
+\vspace{3pc}
+\begin{quote}\em {\bf Tarea 1: Realiza un análisis univariante numérico del banco de datos.}
+\end{quote}
+Primero se cargan los datos y se inspecciona el formato de estos.
+\begin{Schunk}
+\begin{Sinput}
+> load("FicheroDatosP1.Rdata")
+> head(datos)#
+\end{Sinput}
+\begin{Soutput}
+  CodProv NombreProv PobTot2018 PorcVarPob2000_2018 PorcMenores16_2018
+1       1      Álava     328868                14.8               15.9
+2       2   Albacete     388786                 7.0               15.5
+3       3   Alicante    1838819                27.2               15.9
+4       4    Almería     709340                36.9               18.1
+5       5      Ávila     158498                -3.9               12.8
+6       6    Badajoz     676376                 2.2               15.5
+  PorcMayores65_2018 PorcPobExtranjera_2018 EdadMedia2018 TBNatalidad2018
+1               20.5                    8.6         43.05            7.81
+2               19.1                    6.1         43.39            7.66
+3               19.5                   18.3         40.01           10.57
+4               14.5                   19.7         44.16            8.22
+5               25.8                    5.8         48.02            5.60
+6               19.2                    2.8         47.23            6.15
+  TasaBrutaMortalidad TasaMortalidadMenores5anyos EsperanzaVidaH2018
+1                9.57                        3.95              80.86
+2                8.80                        2.97              80.35
+3                7.90                        3.51              78.39
+4                8.47                        4.47              81.60
+5               12.93                        2.62              79.63
+6               12.80                        5.11              81.07
+  EsperanzaVidaM2018 PorcParoAgricultura PorcParoIndustria PorcParoConstruccion
+1              85.95                 8.3              13.7                  6.9
+2              85.28                 4.5              15.1                  6.8
+3              84.19                23.7               4.5                  4.4
+4              87.05                 1.8              27.0                  5.4
+5              85.49                 4.2              12.8                  5.9
+6              85.96                 8.4              11.9                  7.4
+  PorcParoServicios PorcParoOtros
+1              61.1           9.9
+2              65.6           8.0
+3              57.5           9.9
+4              62.1           3.7
+5              70.1           6.9
+6              64.1           8.2
+\end{Soutput}
+\end{Schunk}
+Se puede observar que el banco cuenta con 16 variables cuantitativas así 
+como de dos variables cualitativas que permiten identificar el individuo,
+ en este caso "CodProv" y "NombreProv"
+Para facilitar el trabajo se procederá a separar este banco de datos en variables cualitativas y cuantitativas. La referencia del individuo en el caso del banco de datos cuantitativo se almacenará en el nombre de la fila:
+\begin{Schunk}
+\begin{Sinput}
+> all(rownames(datos) == datos$CodProv) # se comprueba que el nombre de las filas
+\end{Sinput}
+\begin{Soutput}
+[1] TRUE
+\end{Soutput}
+\begin{Sinput}
+> #concuerde con la variable "CovProv"
+> datos_num <- datos[, which(colnames(datos) != "CodProv" & colnames(datos) != "NombreProv")]
+> head(datos_num)
+\end{Sinput}
+\begin{Soutput}
+  PobTot2018 PorcVarPob2000_2018 PorcMenores16_2018 PorcMayores65_2018
+1     328868                14.8               15.9               20.5
+2     388786                 7.0               15.5               19.1
+3    1838819                27.2               15.9               19.5
+4     709340                36.9               18.1               14.5
+5     158498                -3.9               12.8               25.8
+6     676376                 2.2               15.5               19.2
+  PorcPobExtranjera_2018 EdadMedia2018 TBNatalidad2018 TasaBrutaMortalidad
+1                    8.6         43.05            7.81                9.57
+2                    6.1         43.39            7.66                8.80
+3                   18.3         40.01           10.57                7.90
+4                   19.7         44.16            8.22                8.47
+5                    5.8         48.02            5.60               12.93
+6                    2.8         47.23            6.15               12.80
+  TasaMortalidadMenores5anyos EsperanzaVidaH2018 EsperanzaVidaM2018
+1                        3.95              80.86              85.95
+2                        2.97              80.35              85.28
+3                        3.51              78.39              84.19
+4                        4.47              81.60              87.05
+5                        2.62              79.63              85.49
+6                        5.11              81.07              85.96
+  PorcParoAgricultura PorcParoIndustria PorcParoConstruccion PorcParoServicios
+1                 8.3              13.7                  6.9              61.1
+2                 4.5              15.1                  6.8              65.6
+3                23.7               4.5                  4.4              57.5
+4                 1.8              27.0                  5.4              62.1
+5                 4.2              12.8                  5.9              70.1
+6                 8.4              11.9                  7.4              64.1
+  PorcParoOtros
+1           9.9
+2           8.0
+3           9.9
+4           3.7
+5           6.9
+6           8.2
+\end{Soutput}
+\begin{Sinput}
+> codigo_nombre <- datos[, which(colnames(datos) == "CodProv" | colnames(datos) == "NombreProv")]
+\end{Sinput}
+\end{Schunk}
+
+A continuación se crea una función que proporciona algunos estadísticos discriptivos univariantes. Se ha decidido añadir un test de normalidad Shapiro-Wilks para comprobar si la variable puede ser descrita por una distribución normal. El test Shapiro-Wilks toma como hipótesis nula que los datos provienen de una distribución normal, así p-valores por encima del nivel de significación indican que se acepta la hipótesis nula de normalidad. 
+\begin{Schunk}
+\begin{Sinput}
+> describe_custom <- function(data){
++   require(e1071)
++ result <- apply(data, 2, function(x){
++   
++   
++   c(media=mean(x),
++     mediana=median(x),
++     varianza = var(x),
++     des_tipic = sd(x),
++     skew = e1071::skewness(x),
++     kurto = e1071::kurtosis(x),
++     maximo = max(x),
++     minimo = min(x),
++     rango = max(x)- min(x),
++     quantile(x , 0.25 ),
++     quantile(x, 0.50),
++     quantile(x, 0.75),
++     shapiro_pvalor = shapiro.test(x)$p.value)
++   
++ })
++ return(result)
++ }
+> numeric_des <- describe_custom(datos_num)
+> numeric_des
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018 PorcVarPob2000_2018 PorcMenores16_2018
+media          8.985188e+05          11.1576923       15.015384615
+mediana        6.091640e+05           9.6500000       15.450000000
+varianza       1.379157e+12         212.0628808        5.636229261
+des_tipic      1.174375e+06          14.5623790        2.374074401
+skew           3.424991e+00           0.5180954       -0.006526281
+kurto          1.264308e+01          -0.2080464        0.419100591
+maximo         6.578079e+06          53.8000000       22.200000000
+minimo         8.514400e+04         -14.2000000       10.000000000
+rango          6.492935e+06          68.0000000       12.200000000
+25%            3.255698e+05           0.4500000       13.750000000
+50%            6.091640e+05           9.6500000       15.450000000
+75%            1.020944e+06          20.1750000       16.350000000
+shapiro_pvalor 4.625438e-11           0.2171123        0.236300056
+               PorcMayores65_2018 PorcPobExtranjera_2018 EdadMedia2018
+media                  20.5134615           2.474231e+01    44.0188462
+mediana                19.5000000           8.000000e+00    43.3350000
+varianza               17.8764819           1.357293e+04     9.2189555
+des_tipic               4.2280589           1.165029e+02     3.0362733
+skew                    0.4675219           6.782420e+00    -0.1156349
+kurto                  -0.1559526           4.495095e+01     0.3899858
+maximo                 31.2000000           8.480000e+02    50.4900000
+minimo                 11.4000000           2.400000e+00    35.2200000
+rango                  19.8000000           8.456000e+02    15.2700000
+25%                    17.6750000           4.000000e+00    42.1025000
+50%                    19.5000000           8.000000e+00    43.3350000
+75%                    22.8000000           1.230000e+01    45.7000000
+shapiro_pvalor          0.3083571           9.117069e-16     0.2796724
+               TBNatalidad2018 TasaBrutaMortalidad TasaMortalidadMenores5anyos
+media             7.663077e+00          10.1563462                 3.472500000
+mediana           7.660000e+00           9.9350000                 3.385000000
+varianza          2.926143e+00           5.2993021                 1.588666176
+des_tipic         1.710597e+00           2.3020213                 1.260423015
+skew              2.144744e+00           0.5516077                 1.062593464
+kurto             8.089309e+00          -0.2442150                 2.144176781
+maximo            1.583000e+01          15.7500000                 8.040000000
+minimo            4.820000e+00           6.1000000                 1.140000000
+rango             1.101000e+01           9.6500000                 6.900000000
+25%               6.627500e+00           8.6200000                 2.672500000
+50%               7.660000e+00           9.9350000                 3.385000000
+75%               8.222500e+00          11.5775000                 4.145000000
+shapiro_pvalor    2.147524e-06           0.1280758                 0.008399454
+               EsperanzaVidaH2018 EsperanzaVidaM2018 PorcParoAgricultura
+media                  80.3409615       85.629423077        6.796154e+00
+mediana                80.3500000       85.880000000        5.000000e+00
+varianza                0.9943696        1.188350641        2.751175e+01
+des_tipic               0.9971808        1.090114967        5.245164e+00
+skew                   -0.1318343       -1.132546585        1.317765e+00
+kurto                  -0.6095486        1.496888083        1.851682e+00
+maximo                 82.1800000       87.290000000        2.370000e+01
+minimo                 78.2300000       82.130000000        2.000000e-01
+rango                   3.9500000        5.160000000        2.350000e+01
+25%                    79.6900000       85.137500000        3.425000e+00
+50%                    80.3500000       85.880000000        5.000000e+00
+75%                    80.9275000       86.302500000        9.975000e+00
+shapiro_pvalor          0.5940608        0.001228524        7.258436e-05
+               PorcParoIndustria PorcParoConstruccion PorcParoServicios
+media                 13.6250000            6.1769231       65.97115385
+mediana               13.3000000            6.1500000       65.00000000
+varianza              37.1403431            1.7771041       39.27934766
+des_tipic              6.0942877            1.3330807        6.26732380
+skew                   0.1197387           -0.1973129        0.53126948
+kurto                 -0.6065349            0.3998551       -0.33291461
+maximo                27.0000000            9.1000000       80.00000000
+minimo                 1.5000000            2.4000000       52.80000000
+rango                 25.5000000            6.7000000       27.20000000
+25%                    8.7000000            5.5500000       60.95000000
+50%                   13.3000000            6.1500000       65.00000000
+75%                   17.6500000            6.8250000       70.12500000
+shapiro_pvalor         0.7224351            0.5256164        0.04406381
+               PorcParoOtros
+media             7.42115385
+mediana           7.00000000
+varianza          8.15072021
+des_tipic         2.85494662
+skew              0.80807395
+kurto             0.60887189
+maximo           15.90000000
+minimo            1.90000000
+rango            14.00000000
+25%               5.47500000
+50%               7.00000000
+75%               9.10000000
+shapiro_pvalor    0.03020272
+\end{Soutput}
+\end{Schunk}
+
+Si se atendemos al vector de medias se podrá observar como los datos se encuentran en escalas muy diferentes, principalmente la variable PobTot2018 que esta en el rango del millón. Para poder comparar las distintas variables entre sí se decide realizar una tipificación de las variables. Esta tipificación debe de entenderse como un cambio de variables. 
+
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des["media",]
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018         PorcVarPob2000_2018 
+               8.985188e+05                1.115769e+01 
+         PorcMenores16_2018          PorcMayores65_2018 
+               1.501538e+01                2.051346e+01 
+     PorcPobExtranjera_2018               EdadMedia2018 
+               2.474231e+01                4.401885e+01 
+            TBNatalidad2018         TasaBrutaMortalidad 
+               7.663077e+00                1.015635e+01 
+TasaMortalidadMenores5anyos          EsperanzaVidaH2018 
+               3.472500e+00                8.034096e+01 
+         EsperanzaVidaM2018         PorcParoAgricultura 
+               8.562942e+01                6.796154e+00 
+          PorcParoIndustria        PorcParoConstruccion 
+               1.362500e+01                6.176923e+00 
+          PorcParoServicios               PorcParoOtros 
+               6.597115e+01                7.421154e+00 
+\end{Soutput}
+\begin{Sinput}
+> z_value <- function(data){
++   mean_sd <- rbind(media=apply(data, 2, mean), sdd = apply(data, 2, sd))
++   data_num_z <- t(apply(data, 1, function(x,y){
++     (x - y["media", ])/(y["sdd",])
++   }, y = mean_sd))
++   return(data_num_z)
++ }
+> head(z_value(datos_num))
+\end{Sinput}
+\begin{Soutput}
+     PobTot2018 PorcVarPob2000_2018 PorcMenores16_2018 PorcMayores65_2018
+[1,] -0.4850672           0.2501176          0.3726149       -0.003183858
+[2,] -0.4340460          -0.2855091          0.2041281       -0.334305074
+[3,]  0.8006813           1.1016269          0.3726149       -0.239699012
+[4,] -0.1610889           1.7677268          1.2992918       -1.422274786
+[5,] -0.6301401          -1.0340132         -0.9331572        1.250346462
+[6,] -0.1891583          -0.6151256          0.2041281       -0.310653559
+     PorcPobExtranjera_2018 EdadMedia2018 TBNatalidad2018 TasaBrutaMortalidad
+[1,]            -0.13855709   -0.31909056     0.085889924          -0.2547093
+[2,]            -0.16001577   -0.20711118    -0.001798742          -0.5891979
+[3,]            -0.05529738   -1.32031796     1.699361384          -0.9801587
+[4,]            -0.04328052    0.04648918     0.325572279          -0.7325502
+[5,]            -0.16259082    1.31778449    -1.206056425           1.2048776
+[6,]            -0.18834124    1.05759711    -0.884531316           1.1484055
+     TasaMortalidadMenores5anyos EsperanzaVidaH2018 EsperanzaVidaM2018
+[1,]                  0.37884107        0.520505846          0.2940763
+[2,]                 -0.39867568        0.009064014         -0.3205378
+[3,]                  0.02975192       -1.956477143         -1.3204324
+[4,]                  0.79140097        1.262597916          1.3031441
+[5,]                 -0.67636023       -0.712971513         -0.1278976
+[6,]                  1.29916701        0.731099542          0.3032496
+     PorcParoAgricultura PorcParoIndustria PorcParoConstruccion
+[1,]           0.2867110        0.01230661            0.5424105
+[2,]          -0.4377658        0.24202992            0.4673963
+[3,]           3.2227486       -1.49730377           -1.3329449
+[4,]          -0.9525257        2.19467812           -0.5828027
+[5,]          -0.4949614       -0.13537267           -0.2077317
+[6,]           0.3057761       -0.28305194            0.9174816
+     PorcParoServicios PorcParoOtros
+[1,]       -0.77723028     0.8682636
+[2,]       -0.05922047     0.2027520
+[3,]       -1.35163813     0.8682636
+[4,]       -0.61767255    -1.3034058
+[5,]        0.65878935    -0.1825442
+[6,]       -0.29855707     0.2728059
+\end{Soutput}
+\begin{Sinput}
+> numeric_des_z <- describe_custom(z_value(datos_num))
+> numeric_des_z["media",]
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018         PorcVarPob2000_2018 
+               2.029126e-17               -2.391343e-17 
+         PorcMenores16_2018          PorcMayores65_2018 
+               4.656231e-17                1.267745e-16 
+     PorcPobExtranjera_2018               EdadMedia2018 
+               1.793938e-17               -5.413755e-16 
+            TBNatalidad2018         TasaBrutaMortalidad 
+              -2.213607e-16               -3.278627e-16 
+TasaMortalidadMenores5anyos          EsperanzaVidaH2018 
+              -1.275022e-16               -4.123513e-15 
+         EsperanzaVidaM2018         PorcParoAgricultura 
+               2.250137e-15                3.951396e-17 
+          PorcParoIndustria        PorcParoConstruccion 
+              -3.089976e-18               -1.953732e-16 
+          PorcParoServicios               PorcParoOtros 
+               9.897390e-16                6.316729e-17 
+\end{Soutput}
+\end{Schunk}
+
+Como se puede observar todas las variables poseen la misma escala. Ahora si se podrá realizar una correcta comparación entre las distintas variables. Cabe destacar que se omitira la comparación de medias y desviaciones típicas pues al tipificar todas estas pasan a ser 0 y 1 respectivamente. \\
+
+El coeficiente de asimetria aporta una medida de como se distribuyen los datos en función de la media. Así valores iguales a 0 indican una distribución simétrica, valores superiores indican que existe una mayor proporción de valores con una valor numérico superior a la media e inferiores indican que existe una mayor proporción de valores.
+
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["skew",]
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018         PorcVarPob2000_2018 
+                3.424991127                 0.518095398 
+         PorcMenores16_2018          PorcMayores65_2018 
+               -0.006526281                 0.467521853 
+     PorcPobExtranjera_2018               EdadMedia2018 
+                6.782419734                -0.115634920 
+            TBNatalidad2018         TasaBrutaMortalidad 
+                2.144744434                 0.551607713 
+TasaMortalidadMenores5anyos          EsperanzaVidaH2018 
+                1.062593464                -0.131834345 
+         EsperanzaVidaM2018         PorcParoAgricultura 
+               -1.132546585                 1.317765274 
+          PorcParoIndustria        PorcParoConstruccion 
+                0.119738672                -0.197312885 
+          PorcParoServicios               PorcParoOtros 
+                0.531269479                 0.808073951 
+\end{Soutput}
+\end{Schunk}
+Las siguientes variables se corresponden con el segundo caso mencionado anteriormente.
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["skew",][which(numeric_des_z["skew",] > 0)]
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018         PorcVarPob2000_2018 
+                  3.4249911                   0.5180954 
+         PorcMayores65_2018      PorcPobExtranjera_2018 
+                  0.4675219                   6.7824197 
+            TBNatalidad2018         TasaBrutaMortalidad 
+                  2.1447444                   0.5516077 
+TasaMortalidadMenores5anyos         PorcParoAgricultura 
+                  1.0625935                   1.3177653 
+          PorcParoIndustria           PorcParoServicios 
+                  0.1197387                   0.5312695 
+              PorcParoOtros 
+                  0.8080740 
+\end{Soutput}
+\end{Schunk}
+Las siguientes variables se corresponden con el tercer caso mencionado anteriormente.
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["skew",][which(numeric_des_z["skew",] < 0)]
+\end{Sinput}
+\begin{Soutput}
+  PorcMenores16_2018        EdadMedia2018   EsperanzaVidaH2018 
+        -0.006526281         -0.115634920         -0.131834345 
+  EsperanzaVidaM2018 PorcParoConstruccion 
+        -1.132546585         -0.197312885 
+\end{Soutput}
+\end{Schunk}
+Ninguna de las variables posee una distribución totalmente simétrica.
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["skew",][which(numeric_des_z["skew",] == 0)]
+\end{Sinput}
+\begin{Soutput}
+named numeric(0)
+\end{Soutput}
+\end{Schunk}
+Es necesario mencionar que existen mas variables con valores desplazados hacia la derecha de la media, además, este desplazamiento hacia la derecha es especialmente llamativo, se encuentra por encima de la unidad, en las siguientes variables. En el caso de las variables desplazadas hacia la izquierda de la media, solo existe una, con un coeficiente de asimetría superior a 1 en valor absoluto. 
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["skew",][which(numeric_des_z["skew",] > 1)]
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018      PorcPobExtranjera_2018 
+                   3.424991                    6.782420 
+            TBNatalidad2018 TasaMortalidadMenores5anyos 
+                   2.144744                    1.062593 
+        PorcParoAgricultura 
+                   1.317765 
+\end{Soutput}
+\begin{Sinput}
+> numeric_des_z["skew",][which(numeric_des_z["skew",] < -1)]
+\end{Sinput}
+\begin{Soutput}
+EsperanzaVidaM2018 
+         -1.132547 
+\end{Soutput}
+\end{Schunk}
+A continuación se observara el coeficiente de kurtosis, en general este coeficiente da una medida de la proporción de valores cercanos a la media y en las colas. Un valor igual a 0 indica una proporción similar a una distribución normal, valores superiores indican que existen tanto valores muy cercanos a la media como en los extremos, y valores menores a cero indican que existe mayor proporción de puntos medios. 
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["kurto",]
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018         PorcVarPob2000_2018 
+                 12.6430811                  -0.2080464 
+         PorcMenores16_2018          PorcMayores65_2018 
+                  0.4191006                  -0.1559526 
+     PorcPobExtranjera_2018               EdadMedia2018 
+                 44.9509508                   0.3899858 
+            TBNatalidad2018         TasaBrutaMortalidad 
+                  8.0893086                  -0.2442150 
+TasaMortalidadMenores5anyos          EsperanzaVidaH2018 
+                  2.1441768                  -0.6095486 
+         EsperanzaVidaM2018         PorcParoAgricultura 
+                  1.4968881                   1.8516816 
+          PorcParoIndustria        PorcParoConstruccion 
+                 -0.6065349                   0.3998551 
+          PorcParoServicios               PorcParoOtros 
+                 -0.3329146                   0.6088719 
+\end{Soutput}
+\end{Schunk}
+ Así las siguientes variables poseen kurtosis positiva
+ <<>>=
+ numeric_des_z["kurto",][which(numeric_des_z["kurto",] > 0)]
+ @
+ Mientras que las siguientes variables poseen kurtosis negativa
+ <<>>=
+ numeric_des_z["kurto",][which(numeric_des_z["kurto",] < 0)]
+
+ @
+ No existe ninguna variable con kurtosis 0
+ <<>>=
+ numeric_des_z["kurto",][which(numeric_des_z["kurto",] == 0)]
+ @
+ Se puede observar existen mas comunidades con una kurtosis positiva que negativa. Y en general el valor absoluto de las kurtosis positivas es superior al de las kurtosis negativas. \\
+ A continuación se analizará el rango entre máximos y mínimos, esto da una medida de el grado de compactación de los valores. 
+    <<>>=
+    numeric_des_z["rango",]
+    @
+    
+ Se puede observar la variable más compacta es la EsperanzaVidaH2018 mientras que la más dispersa es la PorcPobExtranjera\_2018. \\
+
+Por último se comprobara el resultad del test Shapiro-Wilks realizado. Valores superiores a 0.05, nivel de significación escogido, indican que no se rechaza la hipótesis nula de normalidad, mientras que valores inferiores indican que se rechaza esta.
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["shapiro_pvalor",]
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018         PorcVarPob2000_2018 
+               4.625438e-11                2.171123e-01 
+         PorcMenores16_2018          PorcMayores65_2018 
+               2.363001e-01                3.083571e-01 
+     PorcPobExtranjera_2018               EdadMedia2018 
+               9.117069e-16                2.796724e-01 
+            TBNatalidad2018         TasaBrutaMortalidad 
+               2.147524e-06                1.280758e-01 
+TasaMortalidadMenores5anyos          EsperanzaVidaH2018 
+               8.399454e-03                5.940608e-01 
+         EsperanzaVidaM2018         PorcParoAgricultura 
+               1.228524e-03                7.258436e-05 
+          PorcParoIndustria        PorcParoConstruccion 
+               7.224351e-01                5.256164e-01 
+          PorcParoServicios               PorcParoOtros 
+               4.406381e-02                3.020272e-02 
+\end{Soutput}
+\end{Schunk}
+En las siguientes variables no se rechaza la hipótesis nula de normalidad.
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["shapiro_pvalor",][which(numeric_des_z["shapiro_pvalor",] > 0.05)]
+\end{Sinput}
+\begin{Soutput}
+ PorcVarPob2000_2018   PorcMenores16_2018   PorcMayores65_2018 
+           0.2171123            0.2363001            0.3083571 
+       EdadMedia2018  TasaBrutaMortalidad   EsperanzaVidaH2018 
+           0.2796724            0.1280758            0.5940608 
+   PorcParoIndustria PorcParoConstruccion 
+           0.7224351            0.5256164 
+\end{Soutput}
+\end{Schunk}
+Mientras que en las siguientes se rechaza la hipótesis nula
+\begin{Schunk}
+\begin{Sinput}
+> numeric_des_z["shapiro_pvalor",][which(numeric_des_z["shapiro_pvalor",] < 0.05)]
+\end{Sinput}
+\begin{Soutput}
+                 PobTot2018      PorcPobExtranjera_2018 
+               4.625438e-11                9.117069e-16 
+            TBNatalidad2018 TasaMortalidadMenores5anyos 
+               2.147524e-06                8.399454e-03 
+         EsperanzaVidaM2018         PorcParoAgricultura 
+               1.228524e-03                7.258436e-05 
+          PorcParoServicios               PorcParoOtros 
+               4.406381e-02                3.020272e-02 
+\end{Soutput}
+\end{Schunk}
+
+Por último se realizará una inspección visual de la distribución de cada variable. Para esto se hace uso de la función multiplehist().
+\begin{Schunk}
+\begin{Sinput}
+> multiplehist <- function(data, densiti=FALSE){
++   require(ggplot2)
++   data <- as.data.frame(data)
++   var_name <- names(data)
++   
++   gathered <- data.frame(list(variables=rep(var_name, rep(nrow(data),ncol(data))) ,values=do.call(unlist, list(x=data,use.names=FALSE))), stringsAsFactors = TRUE)
++   
++   
++   
++   if (densiti){
++     h <- ggplot(data=gathered) + aes(x = values) + geom_histogram(aes(y=..density..)) + geom_density( alpha=0.4, fill="#FF6666") + facet_wrap( ~ variables, scales = "free")
++     print(h)
++   }else{
++     h2 <- ggplot(data=gathered) + aes(x = values) + geom_histogram()  + facet_wrap( ~ variables, scales = "free")
++     print(h2)
++   }
++   
++   
++ }
+> multiplehist(z_value(datos_num), densiti = TRUE)
+\end{Sinput}
+\end{Schunk}
+Se puede observar como la variable PorcPobExtranjera\_2018 posee una gran cola hacia la derecha, algo que concuerda con el coeficiente de asimetria encontrado, esta conclusión se puede obtener para las distintas variables. Si atendemos también a la variable PorcPobExtranjera\_2018 se puede entender el coeficiente de kurtosis encontrado, como se puede observar existen valores muy cercanos a la media, así como varios valores extremos.
+
+
+
+\vspace{3pc}
+\begin{quote}\em {\bf Tarea 2: Realiza un análisis de datos anómalos (outliers)}
+\end{quote}
+\begin{enumerate}
+    \item Análisis univariante de datos anómalos.\\
+    Primero se realizará una inspección ocular de los distintos boxplot de cada variable mediante la función multipleboxplot().
+    <<>>=
+    multipleboxplot <- function(data){
+  require(ggplot2)
+  data <- as.data.frame(data)
+  var_name <- names(data)
+ 
+  gathered <- data.frame(list(variables=rep(var_name, rep(nrow(data),ncol(data))) ,values=do.call(unlist, list(x=data,use.names=FALSE))), stringsAsFactors = TRUE)
+  h <- ggplot(data=gathered) + aes(x = variables, y =values) + geom_boxplot() 
+  print(h)
+  
+  
+  
+}
+multipleboxplot(datos_num)
+    @
+     El hecho de que exista una gran diferencia en las escalas dificulta la interpretación. Así se usará el banco de datos tipificado.
+    <<>>=
+    multipleboxplot(z_value(datos_num))
+    @
+  Todas las variables poseen valores extremos, usando como regla para determinación de esta, la misma que en un boxplot. Esto es valores superiores al cuartil superior o inferior mas o menos 3/2 de la distancia entre el cuartil superior o inferior. 
+ Estos valores se descartaran y serán sustituidos, imputación, por los valores medios de la variable antes de eliminar estos valores extremos. Para ello se usará la siguiente función.
+ <<>>=
+ extremos_mean <- function(data, constant){
+  extremos_media <- apply(data, 2, function(x){
+    d = sum(quantile(x, c(0.25, 0.75))*c(-1, 1))
+    c(
+      superior = quantile(x, c(0.75),names=FALSE)+d*constant,
+      inferior = quantile(x, c(0.25),names=FALSE)-d*constant,
+      media = mean(x))
+  })
+  
+  result <- apply(data, 1, function(x, y){
+    idx<-which(x < y["inferior",] | x > y["superior",])
+    x[idx] <- y["media",idx]
+    x
+  }, y = extremos_media)
+  return(as.data.frame(t(result)))
+}
+datos_num_smooth <- extremos_mean(datos_num, constant = 3/2)
+multipleboxplot(z_value(datos_num_smooth))
+ @
+Se puede observar que se ha reducido el número de valores extremos, cabe destacar que la representación sigue mostrando valores extremos, esto es debido a que se han cambiado los valores extremos por la media, lo que centra la distribución de los valores, haciendo que otros valores antes no extremos puedan considerarse ahora extremos. 
+También es util observar los histogramas de la variable sin valores extremos.
+\begin{Schunk}
+\begin{Sinput}
+> multiplehist(z_value(datos_num_smooth), densiti = TRUE)

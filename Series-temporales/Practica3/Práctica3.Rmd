@@ -1,0 +1,127 @@
+---
+title: "Práctica 3"
+author: "Juan Cantero Jimenez"
+date: "4/8/2022"
+output: pdf_document
+---
+
+# 1 Introducción.
+
+En este trabajo se realizará un análisis de la estacionalidad en media y varianza de la serie AustriaT que contiene los datos de la exportaciones totales en millones de euros de Austria hacia la unión europea en el periodo que transcurre desde 1999 hasta 2020 de forma mensual obtenidos de la oficina estadística de la Unión Europea (Eurostat). Además se transforma dicha serie para que cumpla la estacionalidad.
+
+```{r, echo = FALSE, message=FALSE}
+library(forecast)
+library(ggplot2)
+AustriaT <- read.csv2("AustriaT.csv")
+AustriaT <- ts(AustriaT, start = c(1999, 1), frequency = 12)
+```
+
+# 2 Serie con fechado anual.
+
+## 2.1 Representaciones gráficas.
+
+Primero, se anualizará la serie AustriaT mediante la función aggregate()
+
+```{r}
+AustriaTanual <- aggregate(AustriaT, FUN = sum)
+```
+
+Tras esto se realiza la gráfica de la serie original anualizada así como la representación de la primera diferencia regular, $\nabla y_{t} = y_{t} - y_{t-1}$
+
+```{r,fig.width=10, fig.height=2.5}
+par(mfrow=c(2,1))
+autoplot(AustriaTanual, xlab = "",
+         ylab="Exportaciones (millones de euros)",
+         main="Figura 1: Serie AustriaT anualizada")
+
+autoplot(diff(AustriaTanual), xlab="",
+         ylab="Exportaciones (millones de euros)",
+         main = "Figura 2: Primera diferencia regular de la serie AustriaT anualizada")
+```  
+
+Si atendemos a la Figura 1 se podra ver como la serie AustriaT anualizada no es estacionaria en media pero si en varianza. Por el contrario en la Figura 2, que muestra la primera diferenciación regular de la misma serie, se puede apreciar como la serie es estacionaria en media, sin embargo la estacionalidad en varianza no es tan clara. A la luz de este resultado, y con el proposito de ser conservador, se establece que la primera diferencia regular de la serie AustriaT anualizda es estacionaria en media y no en varianza. 
+
+## 2.2 Contraste de raíces unitarias. 
+
+A continuación se realizará un contraste de raices unitarias con el objetivo de determinar la presencia de tendencia estocástica en torno a un nivel así como para contrastar la presencia de tendencia estocástica en torno a una tendencia determinista. Para esto se hace uso de la función ur.kpss() del paquete urca
+
+```{r}
+library(urca)
+summary(ur.kpss(AustriaTanual, type='tau', lags = 'short'))
+```  
+En este caso, se asume la presencia de una tendencia determinista, y para l = 2, el estadítico usado para el contraste vale 0.104 y el valor crítico al 5 % arrojado por la función vale 0.146. Dado que el estadístico de contraste vale menos que el valor crítico, se acepta la hipótesis nula, la serie no tiene una raíz unitaria, en otras palabras, no tiene tendencia estocástica alrededor de una tendencia determinista. Se ha repetido el contraste para la serie AustriaT anualizada diferenciada regularmente usando los mismos valores para los argumentos type y lags con l = 2. En este caso se ha obtenido un valor para el estadístico de contraste de 0.064 y un valor critico al 5 % de 0.146. Puesto que el valor del primero es menor al del valor cŕitico, se acepta la hipotesis nula de que la serie no tiene raices unitarias o en otras palabras no posee una tendencia estocástica alrededor de una tendencia determinista.  
+
+Este mismo contraste se puede realizar para el supuesto de una tendencia estocástica alrededor de un nivel, no hay tendencia determinista. 
+
+
+```{r, echo=FALSE, message=FALSE}
+res <- summary(ur.kpss(diff(AustriaTanual), type='tau', lags = 'short'))
+res2 <- summary(ur.kpss(diff(AustriaTanual), type='mu', lags = 'short'))
+```
+
+
+```{r}
+summary(ur.kpss(AustriaTanual, type='mu', lags = 'short'))
+```  
+
+En este caso, se obtiene un valor de 0.8007 en el estadístico de contraste y un valor de 0.463 para el valor critico al 5 % descartandose la hipotesis nula, la serie tiene tendencia determinista alrededor de un nivel. Este valor para el estadístico de contraste puede ser debido a que en este caso se asume que la serie no posee tendencia determinista, cuando realmente si la tiene, y el test puede estar interpretando dicha tendencia determinista como una tendencia estocástica, de hay el valor obtenido. De nuevo se ha repetido el mismo análisis la primera diferencia regular de AustriaT anualizada, en este caso se ha obtenido un valor del estadístico de contraste de 0.165 y un valor crítico al 5 % de 0.463. Puesto que el valor del estadístico es inferior al valor crítico, se acepta la hipotesis nula, la serie no tiene raiz unitaria, no tiene tendencia estocástica alrededor de un nivel.
+
+## 2.3 Obtención de la serie estacionaria y ergódica. 
+
+En el epígrafe 2.1 se concluyo que la serie era estacionaria en media pero no en varianza, sin embargo este resultado se ha puesto en duda por los obtenidos en el contraste de raíces unitarias que se ha realizado en el epígrafe 2.2. Puesto que para el caso de tendencia determinista presente, como no, se ha aceptado la hipótesis nula de la no presencia de raices unitarias, se puede constatar que la serie AustriaT anualizada con una diferenciación regular es estacionaria. Solo restaría comprobar la presencia de ergodicidad. Esto último se puede realizar mediante la función de autocorrelación, en la que se observar que los valores de autocorrelación no supere el intervalo de confianza del 95 %. 
+
+```{r, fig.width=10, fig.height=2.5}
+ggAcf(diff(AustriaTanual),
+      lag=20,
+      main = "Figura 3: Función de Autocorrelación para la serie AustriaT diferenciada" )
+```  
+Se puede observar como ningún valor de autocorrelación supera el intevalo de confianza 95 %, para un lag = 20, con lo que se puede concluir que la serie AustriaT anualizada es estacionaria y ergódica. 
+
+# 3 Serie original. 
+
+## 3.1 Representaciones gráficas. 
+
+```{r, fig.width=10, fig.height=2.5}
+par(mfrow=c(2,1))
+autoplot(AustriaT, xlab = "",
+         ylab="Exportaciones (millones de euros)",
+         main="Figura 4: Serie AustriaT")
+
+autoplot(diff(AustriaT), xlab="",
+         ylab="Exportaciones (millones de euros)",
+         main = "Figura 5: Primera diferencia regular de la serie AustriaT")
+```  
+
+Si se observa la figura 4, se podra apreciar como la serie AustriaT no es estacionaria ni en media ni en varianza, vease como a simple vista la amplitud de la oscilación es mayor en el periodo 2010-2015 que en el 2000-2005. Por el contrario, si atendemos a la primera diferenciación regular de dicha serie, se podrá ver como es estacionaria en media pero no en varianza, presentando el mismo comportamiento que la serie original pero más acentuado. 
+
+
+## 3.2 Función de autocorrelación.
+
+La función de autocorrelación ofrece una valoración de la dependencia de las observaciones entre ella, midiendo la cantidad de información que tiene cierta observación de las observaciones anteriores a esta. Así esta permite la apreciación de la ergodicidad en la serie temporal. 
+
+```{r, warning=FALSE, fig.width=10, fig.height=2.5}
+ggAcf(AustriaT, lag = 48, main = "Figura 6: Función de autocorrelación de AustriaT ")
+
+ggAcf(diff(AustriaT, lag = 12), lag= 48, main = "Figura 7: Función de autocorrelación de la primera diferenciación estacional de AustriaT")
+
+ggAcf(diff(AustriaT), lag = 48, main="Figura 8: Función de autocorrelación de la primera diferenciación regular de AustriaT")
+```  
+
+Si se observan las figuras 6, 7 y 8 se podrá apreciar como en todas no se cumple la ergodicidad, siendo el mejor resultado aportado, el de la diferenciación regular. Aunque incluso en este, la mayoria de los valores de autocorrelación se encuentran fuera del intervalo de confianza al 95 % de la distribución de estos. 
+
+
+## 3.3 Obtención de la serie estacionaria y ergódica. 
+
+Tras probar hasta con un máximo de tres diferenciaciones, incluyendo estacionales, y la aplicación del logaritmo, la serie que presenta estacionalidad y ergodicidad de forma aproximada es en la que se ha realizado una diferenciación estacional, seguida de una regular y de la aplicación de logaritmo. 
+
+```{r, fig.width=10, fig.height=2.5}
+autoplot(diff(diff(log(AustriaT)), lag = 12),xlab="",
+         ylab=" Dif. tasa de variación anual",
+         main = "Figura 9: Serie AustriaT diff-estacional+diff+log")
+ggAcf(diff(diff(log(AustriaT), lag = 12)), main="Figura 10: Funcion de autocorrelación AustriaT diff-estacional+diff+log", lag = 48)
+```  
+
+En la Figura 9 se puede comprobar como la serie es estacionaria en media y varianza, mientras que en la figura 10 se muestra la función de autocorrelación. Respecto a este último, la ergodicidad no es perfecta pues existen gran cantidad de puntos de correlaciones fuera del intervalo de confianza 95 % de la distribución de los valores de la función de correlación. Así se concluye que la serie AustriaT es estacionaria ergódica al aplicarle dos diferenciaciones, una de ellas estacionaria, y el logaritmo. 
+
+
+

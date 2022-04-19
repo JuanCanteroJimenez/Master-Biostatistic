@@ -1,0 +1,73 @@
+---
+title: "Practica 1"
+author: "Juan Cantero Jimenez"
+date: "2/20/2022"
+output: pdf_document
+---
+
+## 1 La media y la mediana son dos estimadores de tendencia central en distribuciones, ampliamente conocidos y utilizados. En esta tarea nos vamos a plantear su comparación como estimadores de la media de una distribución Normal. Para ello vamos a hacer uso de procedimientos de tipo empírico más que de razonamientos teóricos. Así:  
+
+```{r}
+result_normal <- replicate(100, {
+  data <- rnorm(50)
+  return(c(media=mean(data), mediana = median(data)))
+})
+result_student <- replicate(100, {
+  data <- rt(50,1)
+  return(c(media=mean(data), mediana=median(data)))
+})
+cat("ECM media muestra normal", mean((0-result_normal["media",])^2))
+cat("ECM mediana muestra normal", mean((0-result_normal["mediana",])^2))
+cat("ECM media muestra student", mean((0-result_student["media",])^2))
+cat("ECM mediana muestra student", mean((0-result_student["mediana",])^2))
+
+
+```
+
+## 2 Supongamos que disponemos de la siguiente muestra de valores: set.seed(1); x <- exp(rnorm(50)), todos ellos valores positivos en la recta real. Para este conjunto de datos, nos planteamos ajustarles una distribución Gamma), adecuada para este tipo de datos con valores positivos. Halla, haciendo uso de R, los estimadores MLE de α y β y representa un histograma de la muestra de valores x, con la distribución Gamma que hayas estimado superpuesta. Haciendo uso de la aproximación Normal de los MLE calcula un intervalo de confianza al 95% para el parámetro α de la distribución que acabas de calcular.  
+
+```{r}
+set.seed(1)
+x <- exp(rnorm(50))
+minusloglikelihod <- function(alpha, beta){-sum(dgamma(x, alpha, beta, log=TRUE))}
+fit1<-stats4::mle(minusloglikelihod, start=list(alpha=0.1, beta=0.1))
+#fit1@coef
+hist(x, prob = TRUE, col="gray")
+lines((0:5000)/1000, dgamma((0:5000)/1000, fit1@coef[1], fit1@coef[2]), lwd=2, col="red")
+print(fit1@coef - qnorm(0.975)*sqrt(diag(fit1@vcov)))
+```  
+
+## 3. Reproduce por ti mismo el ejemplo de la página 17 del Tema 1 de la asignatura. Comprueba que los resultados que obtienes en cuanto a la proporción de veces que los intervalos de confianza contienen el valor 0 son similares a los de los apuntes  
+
+```{r}
+result <- replicate(1000, {
+  data <- rnorm(100)
+  media <- mean(data)
+  ic <- media+c(-1,1)*1.96*(1/sqrt(100))
+  ic[1] < 0 & ic[2] > 0
+})
+mean(result)
+```  
+
+## 4  Utiliza la función t.test de R para valorar si encuentras diferencias en las medias de las poblaciones de las que provienen las siguientes 2 muestras: set.seed(1);x<-rnorm(10) e y<-rnorm(10,1). Eleva el tamaño muestral de ambas muestras a 20 y 30 para valorar como cambian tus conclusiones.  
+
+```{r}
+ns <- c(10, 20, 30)
+result <- sapply(ns, function(x){
+  set.seed(1)
+  xx <- rnorm(x)
+  yy <- rnorm(x, 1)
+  t.test(xx, yy)$p.value
+  })
+result
+```
+
+
+```{r}
+
+```
+
+
+
+
+

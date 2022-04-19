@@ -1,0 +1,85 @@
+---
+title: "Practica 4"
+author: "Juan Cantero Jimenez"
+date: "2/20/2022"
+output: pdf_document
+---
+
+## 1. 
+
+```{r}
+library(ISLR)
+data(Auto)
+str(Auto)
+```
+
+```{r}
+auto_num <- Auto[,1:7]
+```
+
+```{r}
+mod1 <- lm(mpg ~ ., data=auto_num)
+mod1
+summary(mod1)
+```
+La varaibles weight y año poseen un  efecto significativo sobre mpg, waight tiene una relación negativa con mpg, y un aumento de una unidad en este reduce mpg en 0.006795 unidades, de forma analoga year tiene una relación positiva, y un aumento en este aumenta mpg en 0.7534
+En este caso horsepower deja de ser significativa para la explicación de mpg, su error standar asi como su efecto es muchisimo menor. 
+
+
+## 2. 
+
+```{r}
+model2 <- lm(mpg ~ year + weight, data=Auto)
+model2
+summary(model2)
+```
+El error standar de los resiudos se ve reducido ligeramente así como el de las covariables, pero esta reducción se da en distinta medida para las variables. Tambien varia ligeramente el efecto de estas. 
+
+A la distinta desviación típica de cada una de las variables. 
+
+```{r}
+Auto$origin<-relevel(Auto$origin,ref="2")
+mod3 <- lm(mpg ~ year + weight + year:weight, data=Auto)
+mod3
+summary(mod3)
+```
+ A la luz de los resultados expuesto en el cuadro de dialgoo anterior si considero aconsejable introducir la interacción de las variables. La interacción en este caso puede interpretarse como la variación en el efecto del cambion en el peso teniendo en cuenta el cambio de año. Esto significa que una reducción de X kg en el peso tendrá un efecto distinto dependiendo de el año de fabricación del coche. 
+ 
+
+## 3
+
+```{r}
+load("Nitrite.Rdata")
+```
+
+ 
+```{r}
+str(Nitrite)
+pairs(Nitrite[,1:2])
+```
+```{r}
+mod4 <- lm(utilization ~ poly(light, 3), data=Nitrite)
+mod4
+summary(mod4)
+x <- 2:170
+with(Nitrite,plot(light, utilization))
+lines(x, predict(mod4, data.frame(light=x)))
+lines(x, predict(mod4, data.frame(light=x), interval = "confidence")[,2],col="red")
+lines(x, predict(mod4, data.frame(light=x), interval = "confidence")[,3],col="red")
+lines(x, predict(mod4, data.frame(light=x), interval = "prediction")[,2],col="blue")
+lines(x, predict(mod4, data.frame(light=x), interval = "prediction")[,3],col="blue")
+```
+```{r}
+
+```
+
+## 4. 
+
+No se no contesto, pero creo que No
+
+No, si estas variables son colineales la variabilidad del coeficiente aumentara
+
+Si, pues existe más incertidumbre sobre el efecto que puede tener esta sobre la variables respuesta. 
+
+No tiene porque, pues el coeficiente debe entenderse como el efecto de esa variable controlando el efecto de las demás. 
+

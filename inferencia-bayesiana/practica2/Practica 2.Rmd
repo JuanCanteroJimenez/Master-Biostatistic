@@ -1,0 +1,178 @@
+---
+title: "Practica 2"
+author: "Juan Cantero Jimenez"
+date: "3/6/2022"
+output: pdf_document
+---
+## Introducción
+
+Continuando con la temática de la práctica anterior, en este caso se desea hacer inferencia sobre el valor del exponente de Lyapunov para los SFI que generan representaciones visualmente relevantes así como comparar si existen diferencias estadísticamente significativas entre los valores de estas variables, en función del número de atractores que posea el SFI. 
+ 
+## Lectura y exploración de los datos
+
+Se cargan datos
+
+```{r}
+data = read.csv("datos_investigacion.csv", sep=",")
+str(data)
+```  
+se separan los SFI en función del número de atractores, y se selecciona el exponente de Lyapunov de los SFI con representaciones que pasen el criterio de calidad visual, dimension fractal (FD) mayor o igual a 1 y exponente de Lyapunov (L) menor que -0.2
+
+```{r}
+Lexp2 <- data$L[which(data$Atractores==2 & data$L <= -0.2 & data$FD >= 1 &  data$FD != Inf & data$FD != -Inf & data$L != -Inf & data$L != Inf)]
+Lexp3 <- data$L[which(data$Atractores==3 & data$L <= -0.2 & data$FD >= 1 &  data$FD != Inf & data$FD != -Inf & data$L != -Inf & data$L != Inf)]
+Lexp4 <- data$L[which(data$Atractores==4 & data$L <= -0.2 & data$FD >= 1 &  data$FD != Inf & data$FD != -Inf & data$L != -Inf & data$L != Inf)]
+```  
+
+se exploran los datos
+
+```{r}
+
+par(mfrow=c(3,2))
+hist(Lexp2)
+plot(density(Lexp2))
+hist(Lexp3)
+plot(density(Lexp3))
+hist(Lexp4)
+plot(density(Lexp4))
+```
+como se puede observar, los valores del exponente de Lyapunov para SFI visualmente relevantes toma valores desde ($-\inf$,-0.2], que no se corresponde con el soporte de ninguna distribución conocida. Sin embargo,tanto el histograma como la densidad de la distribución son similares a una distribución exponencial, por que lo que es sujerente aplicar una transformación en los datos para asemejarla a esta última
+
+
+```{r}
+par(mfrow=c(3,2))
+Zexp2 <- Lexp2*-1 -0.2
+hist(Zexp2)
+plot(density(Zexp2))
+Zexp3 <- Lexp3*-1 -0.2
+hist(Zexp3)
+plot(density(Zexp3))
+Zexp4 <- Lexp4*-1 -0.2
+hist(Zexp4)
+plot(density(Zexp4))
+```  
+Como se puede observar tras la transformación la nueva variable si se asemeja mas a una distribución exponencial de parámetro desconocido. 
+
+
+## Metodología
+
+Debido a la inconveniencia de que la variable de interés L, el valor del coeficiente de Lyapunov, no sigue una distribución conocida la forma de proceder será la siguiente:  
+- Aplicar la transformación a la variable L
+\begin{gather}
+L: valor\;del\;exponente\;de\;Lyapunovde\;los\;SFI\;relevantes\\  
+Z = -1*L -0.2
+\end{gather}
+- Realizar un procedimiento de inferencia bayesiana sobre el parámetro $\lambda$ de una distribución exponencial:
+\begin{gather}
+Z \sim Ex(\lambda)\\  
+\pi(\lambda) = 1/\lambda\; Previa\\
+\pi(\lambda \mid datos) = Ga(\lambda \mid n, \bar{y}n)\;Posteriori
+\end{gather}
+-Simular la distribución de L a partir de datos simulados de la distribución Z aplicando a Z la transformación inversa.  
+-Caracterizar la distribución resultante.
+
+## Analisis de los datos
+
+### Inferencia para 2 atractores
+
+Teniendo en cuenta una distribución previa no informativa, $\pi(\lambda_{2A} \mid datos)$ puede obtenerse como:
+
+```{r}
+alpha2 = length(Zexp2)
+beta2 = length(Zexp2)*mean(Zexp2)
+curve(dgamma(x,alpha2, beta2), xlim=c(0,10), ylim=c(0,10), main="Distribución de lambda dado los datos")
+```  
+
+La distribución de L puede obtenerse, simulando los valores de lambda, a partir de estos simular los valores de Z y aplicar a estos últimos la transformación inversa:
+
+```{r}
+N <- 100000
+lambdas <- rgamma(N, alpha2, beta2)
+Zexp2sim <- sapply(lambdas, function(x) rexp(1, x))
+Lexp2sim <- (Zexp2sim + 0.2)*-1
+par(mfrow=c(1,2))
+plot(density(Lexp2sim))
+hist(Lexp2sim)
+mean(Lexp2sim)
+sd(Lexp2sim)
+quantile(Lexp2sim, c(0.025, 0.975))
+```  
+Así obtenemos que $E(L_{2A} \mid datos) = -0.4410636$, $DT(L_{2A} \mid datos) =0.2412392$ y $P(-1.0866120 < L_{2A} < -0.2062507 )=0.95$
+
+### Inferencia para 3 atractores
+
+Teniendo en cuenta una distribución previa no informativa, $\pi(\lambda_{3A} \mid datos)$ puede obtenerse como:
+
+```{r}
+alpha3 = length(Zexp3)
+beta3 = length(Zexp3)*mean(Zexp3)
+curve(dgamma(x,alpha3, beta3), xlim=c(0,10), ylim=c(0,10), main="Distribución de lambda dado los datos")
+```  
+
+La distribución de L puede obtenerse, simulando los valores de lambda, a partir de estos simular los valores de Z y aplicar a estos últimos la transformación inversa:
+
+```{r}
+N <- 100000
+lambdas <- rgamma(N, alpha3, beta3)
+Zexp3sim <- sapply(lambdas, function(x) rexp(1, x))
+Lexp3sim <- (Zexp3sim + 0.2)*-1
+par(mfrow=c(1,2))
+plot(density(Lexp3sim))
+hist(Lexp3sim)
+mean(Lexp3sim)
+sd(Lexp3sim)
+quantile(Lexp2sim, c(0.025, 0.975))
+```  
+Así obtenemos que $E(L_{3A} \mid datos) = -0.423901$, $DT(L_{3A} \mid datos) =0.2231324$ y $P(-1.0878102 < L_{3A} < -0.2062207 )=0.95$
+
+
+### Inferencia para 4 atractores
+
+Teniendo en cuenta una distribución previa no informativa, $\pi(\lambda_{4A} \mid datos)$ puede obtenerse como:
+
+```{r}
+alpha4 = length(Zexp4)
+beta4 = length(Zexp4)*mean(Zexp4)
+curve(dgamma(x,alpha4, beta4), xlim=c(0,10), ylim=c(0,10), main="Distribución de lambda dado los datos")
+```  
+
+La distribución de L puede obtenerse, simulando los valores de lambda, a partir de estos simular los valores de Z y aplicar a estos últimos la transformación inversa:
+
+```{r}
+N <- 100000
+lambdas <- rgamma(N, alpha4, beta4)
+Zexp4sim <- sapply(lambdas, function(x) rexp(1, x))
+Lexp4sim <- (Zexp4sim + 0.2)*-1
+par(mfrow=c(1,2))
+plot(density(Lexp4sim))
+hist(Lexp4sim)
+mean(Lexp4sim)
+sd(Lexp4sim)
+quantile(Lexp4sim, c(0.025, 0.975))
+```  
+
+Así obtenemos que $E(L_{4A} \mid datos) = -0.4015237$, $DT(L_{3A} \mid datos) =0.2011158$ y $P(-0.9419859 < L_{4A} < -0.2052573 )=0.95$
+
+
+### Inferencia sobre la diferencia de las distribuciones
+
+Por útlimo queremos obtener las distribuciones $(L_{2A}-L_{3A} \mid datos)$, $(L_{2A}-L_{4A} \mid datos)$ y $(L_{3A}-L_{4A} \mid datos)$ estas pueden obtenerse como:
+
+```{r}
+#Diferencia L2 y L3
+dif2.3 <- Lexp2sim-Lexp3sim
+mean(dif2.3)
+sd(dif2.3)
+quantile(dif2.3, c(0.025, 0.975))
+#Diferencia L2 y L4
+dif2.4 <- Lexp2sim-Lexp4sim
+mean(dif2.4)
+sd(dif2.4)
+quantile(dif2.4, c(0.025, 0.975))
+#Diferencia L3 y L4
+dif3.4 <- Lexp3sim-Lexp4sim
+mean(dif3.4)
+sd(dif3.4)
+quantile(dif3.4, c(0.025, 0.975))
+```
+Así obtenemos que $E(L_{2A}-L_{3A} \mid datos)=-0.0161838$, $DT(L_{2A}-L_{3A} \mid datos)= 0.3306142$ y $P(-0.728217 < L_{2A}-L_{3A} < 0.667734)$; $E(L_{2A}-L_{4A} \mid datos)=-0.03953984$, $DT(L_{2A}-L_{4A} \mid datos)=0.3134821$ y $P(-0.7388336  < L_{2A}-L_{4A} < 0.5818107 )$; $E(L_{3A}-L_{4A} \mid datos)=-0.02335604$, $DT(L_{3A}-L_{4A} \mid datos)=0.302492$ y $P(-0.6845206 < L_{3A}-L_{4A} < 0.5912958)$. Puede observarse que en el intervalo de alta probabilidad de la diferencia de los exponentes de Lyapunov de las distintas configuraciones de SFI se encuentra el valor 0, por lo que podemos concluir que no existen diferencias significativas entre las medias de de este valor para los SFI con distinto número de atractores.  

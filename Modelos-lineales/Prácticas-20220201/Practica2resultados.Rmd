@@ -1,0 +1,88 @@
+---
+title: "Practica 2"
+author: "Juan Cantero Jimenez"
+date: "2/20/2022"
+output: pdf_document
+---
+
+## 1.  
+
+```{r}
+N <- 1000
+n <- 100
+data <- matrix(rnorm(N*n), ncol=n, nrow=N)
+p_values <- apply(data, 1, function(x){
+  t.test(x, mu=0 )$p.value
+  
+  
+  
+})
+hist(p_values)
+
+```  
+Los p-valores siguen una distribución uniforme(0, 1)
+
+```{r}
+medias <- 0.05*(1:10)
+result <- sapply(medias, function(x){
+  N <- 1000
+n <- 400
+data <- matrix(rnorm(N*n, x), ncol=n, nrow=N)
+p_values <- apply(data, 1, function(x){
+  t.test(x, mu=0 )$p.value
+  
+  
+
+})
+return(mean(p_values < 0.05))
+})
+plot(medias, 1-result, type="l")
+```
+Como podemos observar en todos los casos se comete error de tipo II, es decir aceptar la hipotesis nula cuando realmente esta es falsa. Es relevante apreciar como para el tamaño muestral del experimento n=100, y una media real de 0.1 la proporción de errores de tipo II es del 0.8, conforme la diferencia en las medias es mayor este número ira disminuyendo. Así se puede ver como la potencia de un test determinará la capacidad de detecctar diferencias estadísticamente significativas.
+
+## 2. 
+
+```{r}
+load("Glucosa.Rdata")
+low_car <- Glucosa$GDespues[Glucosa$Dieta=="H. Carbono"]
+low_sugar <- Glucosa$GDespues[Glucosa$Dieta=="Azúcares"]
+normal <- Glucosa$GDespues[Glucosa$Dieta=="Normal"]
+t1<-t.test(low_car, low_sugar)
+t1
+
+```  
+
+```{r}
+t2 <- t.test(normal, low_sugar, alternative = "greater")
+t2
+```  
+
+
+```{r}
+low_car <- Glucosa$GDespues[Glucosa$Dieta=="H. Carbono"]
+t3 <- t.test(Glucosa$GDespues[Glucosa$Dieta=="H. Carbono"], Glucosa$GAntes[Glucosa$Dieta=="H. Carbono"], paired = TRUE, alternative = "less")
+t3
+t4 <- t.test(Glucosa$GDespues[Glucosa$Dieta=="Azúcares"], Glucosa$GAntes[Glucosa$Dieta=="Azúcares"], paired = TRUE, alternative = "less")
+t4
+t5 <- t.test(Glucosa$GDespues[Glucosa$Dieta=="Normal"], Glucosa$GAntes[Glucosa$Dieta=="Normal"], paired = TRUE, alternative = "less")
+t5
+```  
+
+
+
+## 3. 
+
+
+No, si se repite de forma unilateral pero en la dirección opuesta al efecto real subyacente en los datos, el p.valor será muy superior al situarse en el otro extremo. 
+
+Si,
+
+No, 
+Si, pues si se rechaza la hipótesis nula la otra explicación para la discrepancia encontrada en los datos es la hipótesis alternativa, solo existen esas dos opciones. 
+
+No, solo concluimos que no hemos encontrado diferencias significativas en los datos, pero eso no quiere decir que la hipótesis nula sea cierta. 
+
+
+
+
+
