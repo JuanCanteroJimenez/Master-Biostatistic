@@ -1,0 +1,73 @@
+---
+title: "Practica 1"
+author: "Juan Cantero Jimenez"
+date: "4/22/2022"
+output: pdf_document
+---
+
+# Lectura de los datos y analisis
+
+```{r}
+library(titanic)
+data("titanic_train")
+```
+
+Se retiran las variables Ticket, Cabin y Name debido a que son variables de tipo categóricas que especifican el individuo pero no hacen referencia a grupos en los que se puedan agrupar las observaciones. Además se alimina la variable Fare que hace referencia a la tarifa pagada por cada individuos devido a que esta es totalmente dependiente de la clase en la que se encuentre el individuo, evitando problemas de colinealidad. 
+
+```{r}
+titanic.train.filtered <- titanic_train[,-which(colnames(titanic_train) == "Ticket" | colnames(titanic_train) == "Cabin" | colnames(titanic_train) == "Name" | colnames(titanic_train) == "PassengerId" |  colnames(titanic_train) == "Fare")]
+```
+
+Además se retiran las observaciones que no poseen algun valor en sus variables.
+
+```{r}
+titanic.train.filtered.nona <- na.omit(titanic.train.filtered)
+```
+
+
+```{r}
+summary(titanic.train.filtered)
+```
+
+```{r}
+library(ggplot2) 
+titanic.graphics <- data.frame(Survived = as.factor(rep(titanic.train.filtered.nona$Survived, ncol(titanic.train.filtered.nona)-3)),
+                               Key = rep(colnames(titanic.train.filtered.nona)[c(-1,-3,-7)], rep(nrow(titanic.train.filtered.nona), ncol(titanic.train.filtered.nona)-3)),
+                               Value = do.call(c, as.list(titanic.train.filtered.nona[, c(-1, -3, -7)])))
+ggplot(data=titanic.graphics, aes(y = Value, x = Survived)) + geom_boxplot() + facet_wrap(. ~ Key, scales = "free")
+```
+
+```{r}
+titanic.train.filtered.nona
+```
+
+
+# Volvamos a comenzar
+
+
+```{r}
+titanic_train
+```
+
+Se decide eliminar las variables Cabin y Ticket number debido a que no ofrecen ningun tipo de información que permita agrupar individuos ¿?. La variable Name podria ser tambien descartada debido a que no ofrece información relevante a primera vista. Sin embargo, esta no solo posee el nombre de la persona sino que tambien aporta el titulo del individuo, esta información si puede ser más relevante debido a que ofrece una posición sociocultural del individuo. Esta puede ser extraida haciendo uso de expresiones regulares
+
+```{r}
+title <- res<-sapply(titanic_train$Name, function(x){
+  
+  m<-regexpr(",.{1,20}\\.", x)
+  first.result <- regmatches(x, m)
+  m2 <- regexpr("\\w{1,}(\\w|\\s){1}\\w{1,10}", first.result)
+  regmatches(first.result, m2)
+  
+})
+
+titanic.work <- titanic_train[,-which(colnames(titanic_train) == "Ticket" | colnames(titanic_train) == "Cabin" | colnames(titanic_train) == "Name" | colnames(titanic_train) == "PassengerId")]
+titanic.work$title <- title
+titanic.work <- na.omit(titanic.work)
+```
+
+```{r}
+mean(titanic.work$Survived[titanic.work$title == "Lady"])
+```
+
+
