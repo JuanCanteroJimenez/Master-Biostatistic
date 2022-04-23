@@ -56,7 +56,7 @@ title <- res<-sapply(titanic_train$Name, function(x){
   
   m<-regexpr(",.{1,20}\\.", x)
   first.result <- regmatches(x, m)
-  m2 <- regexpr("\\w{1,}(\\w|\\s){1}\\w{1,10}", first.result)
+  m2 <- regexpr("\\w{1,2}.{0,20}\\w", first.result)
   regmatches(first.result, m2)
   
 })
@@ -64,10 +64,118 @@ title <- res<-sapply(titanic_train$Name, function(x){
 titanic.work <- titanic_train[,-which(colnames(titanic_train) == "Ticket" | colnames(titanic_train) == "Cabin" | colnames(titanic_train) == "Name" | colnames(titanic_train) == "PassengerId")]
 titanic.work$title <- title
 titanic.work <- na.omit(titanic.work)
+titanic.work$Pclass <- as.factor(titanic.work$Pclass)
+titanic.work$Sex <- as.factor(titanic.work$Sex)
+titanic.work$Embarked <- as.factor(titanic.work$Embarked)
+titanic.work$title <- as.factor(titanic.work$title)
 ```
 
 ```{r}
-mean(titanic.work$Survived[titanic.work$title == "Lady"])
+titanic.work
 ```
 
+
+```{r}
+par(mfrow=c(2,4))
+plot(titanic.work$Age, titanic.work$Survived)
+plot(titanic.work$Fare, titanic.work$Survived)
+probs <- function(x, var){
+  mean(titanic.work$Survived[titanic.work[[var]] == x])
+}
+pclass <- data.frame(clases = as.factor(levels(titanic.work$Pclass)),
+                     values = sapply(levels(titanic.work$Pclass),function(x,y) probs(x, y), y="Pclass"))
+sexx <- data.frame(clases = as.factor(levels(titanic.work$Sex)),
+                     values = sapply(levels(titanic.work$Sex),function(x,y) probs(x, y), y="Sex"))
+embarked <- data.frame(clases = as.factor(levels(titanic.work$Embarked)),
+                       values = sapply(levels(titanic.work$Embarked), function(x,y) probs(x,y), y="Embarked"))
+title <- data.frame(clases= as.factor(levels(titanic.work$title)),
+                    values = sapply(levels(titanic.work$title), function(x,y) probs(x,y), y="title"))
+sobrinos <- as.factor(titanic.work$SibSp)
+sibsp <- data.frame(clases= as.factor(levels(sobrinos)),
+                    values = sapply(as.numeric(levels(sobrinos)), function(x,y) probs(x,y), y="SibSp"))
+padres <- as.factor(titanic.work$Parch)
+parch <- data.frame(clases=as.factor(levels(padres)),
+                    values = sapply(as.numeric(levels(padres)), function(x,y) probs(x,y), y="Parch"))
+plot(pclass)
+plot(sexx)
+plot(embarked)
+plot(title)
+plot(parch)
+plot(sibsp)
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Ajuste del modelo
+
+
+```{r}
+aj.logit <- glm(Survived ~ . , family = binomial(link="logit"), data=titanic.work)
+summary(aj.logit)
+```
+
+```{r}
+aj.cloglog <- glm(Survived ~ . , family = binomial(link="cloglog"), data=titanic.work)
+summary(aj.cloglog)
+```
+
+
+```{r}
+aj.probit <- glm(Survived ~ . , family = binomial(link="probit"), data=titanic.work)
+summary(aj.probit)
+```
+
+
+
+# Valoracion del ajuste
+
+
+```{r}
+hoslem.test(titanic.work$Survived, fitted(aj.logit))
+hoslem.test(titanic.work$Survived, fitted(aj.cloglog))
+hoslem.test(titanic.work$Survived, fitted(aj.probit))
+
+```
+
+
+
+# Probamos a eliminar las variables no relevantes
+
+```{r}
+aj2.logit <- glm(Survived ~ Pclass + Sex + SibSp + Parch , family = binomial(link="logit"), data=titanic.work)
+summary(aj2.logit)
+hoslem.test(titanic.work$Survived, fitted(aj2.logit))
+
+
+```
+
+
+```{r}
+aj2.probit <- glm(Survived ~ Pclass + Sex + SibSp + Parch , family = binomial(link="probit"), data=titanic.work)
+summary(aj2.probit)
+hoslem.test(titanic.work$Survived, fitted(aj2.probit))
+```
+
+
+```{r}
+aj2.probit <- glm(Survived ~ Pclass + Sex + SibSp + Parch , family = binomial(link="probit"), data=titanic.work)
+summary(aj2.probit)
+hoslem.test(titanic.work$Survived, fitted(aj2.probit))
+```
 
