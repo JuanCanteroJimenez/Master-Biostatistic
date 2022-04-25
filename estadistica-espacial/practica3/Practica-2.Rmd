@@ -1,0 +1,522 @@
+---
+title: "Practica 2"
+author: "Juan Cantero Jimenez"
+date: "4/25/2022"
+output: pdf_document
+---
+
+# Introducción
+
+En esta prácitca se realiza un estudio de tipo descriptivo de patrones puntuales basados en las técnicas de conteo por quadrats y métodos de distancia sobre 4 datasets que contienen información de la distribución de robles, arces, secuoyas y pinos. 
+
+# Estudio descriptivo de pantrones puntuales de robles
+
+```{r,echo =FALSE}
+robles<-matrix(scan('robles.d'),ncol=2,byrow=T)
+source('utilpp.r')
+par(pty='s')
+plot(robles,pch=20,xlab='x',ylab='y', main="Figura 1: patrones puntuales de robles", cex.main=0.8)
+```  
+
+A simple vista, en la Figura 1, no existe ningun indicio que haga dudar sobre la aleatoriaded espacial completa en la distribución de los robles presentes en este conjunto de datos.
+
+## Analisis mediante un grid de quadrats
+
+```{r,echo =FALSE}
+par(mfrow=c(1,1),pty="s")
+plot(robles,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20, main="Figura 2: patrones puntuales de robles + grid de quadrats",cex.main=0.8)
+dibu.qua(4,4)
+nump.qua<-c(cuenta.qua(robles,4,4))
+chisq.test(nump.qua)
+```  
+El test $\chi²$ realizado sobre el conteo de la ocurrencia de robles en las distintos quadrats descarta la hipótesis núla de aleatoriedad espacial completa con un p-valor de 5.502e-06. Se ha comprobado que al aumentar el número de quadrats se sigue descartando la hipótesis nula de aleatoriedad espacial completa, resultados no mostrados. 
+
+## Análisis mediante un muestreo con quadrats aleatorios.
+
+```{r,echo =FALSE}
+centros.qua<-Simqalea(20,0.08)
+plot(robles,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20, main="Figura 3: patrones puntuales de robles + quadrats aleatorias",cex.main=0.8)
+# La función dibalea.qua() dibuja los quadrats circulares simulados
+dibalea.qua(centros.qua)
+# La función cupenl.qua() calcula cuantos sucesos hay en cada quadrat
+nump.qua<-cupenl.qua(robles,centros.qua)
+# La función indices.qua() calcula los índices de agrupación
+indices.qua(nump.qua)
+```
+
+Si se observa la varianza relativa, el indice de David-Moore y la Desigualdad de Lloyd el hecho de que sean mayores que 1 hace sospechar de una desviación de la aleatoriedad espacial completa.
+
+## Métodos de distancia
+
+```{r,echo =FALSE}
+# Calculamos todas las distancias entre los sucesos
+# La función genérica dist() crea una matriz (n,n) de distancias
+# La función sort() ordena y convierte en vector las n*(n-1)/2 distancias
+distan<-sort(dist(robles))
+par(mfrow=c(1,2))
+hist(distan, main="Figura 4: histograma de las distancias",cex.main=0.8)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Hgorro <- ecdf(distan)
+plot(Hgorro, verticals= TRUE, do.p = F, main="Figura 5: funcion de distribución acumulada empírica",cex.main=0.8)
+par(mfrow=c(1,1))
+# Compararemos la distribución empírica con la teórica Ht()
+plot(sapply(distan,Ht),Hgorro(distan),type="l", main="Figura 6:  comparación distribución teórica y empírica",cex.main=0.8)
+
+# La línea roja marca el ajuste perfecto con la aleatoridad espacial completa
+abline(0,1,col=2)
+# La función Henvl() calcula 19 simulaciones de patrones completamente aleatorios 
+# y determina el mínimo y el máximo de la función H empírica para cada distancia
+lims<-Henvl(19,robles)
+# Se pintan en verde los límites inferior y superior de las simulaciones
+lines(sapply(lims$xl,Ht),Hgorro(distan),col="green")
+lines(sapply(lims$xu,Ht),Hgorro(distan),col="green")
+```  
+
+Atendiendo a la figura 6, se podrá ver como la linea negra que representa la funcion de distribución acumulada empírica se superpone con la linea verde que muestra los máximo y mínimos de variación aleatoria de la función de distribución teórica. Esto hace que no exista evidencia para descartar la hipótesis de aleatoriedad espacial completa, mediante el criterio de la distancia entre sucesos. 
+
+
+
+## Distancias al vecino más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center",echo =FALSE}
+# La función calcdvmp() calcula las distancias al vecino más próximo
+distvmp<-sort(calcdvmp(robles))
+par(mfrow=c(1,2))
+hist(distvmp, main = "Figura 7: histograma de las distancias al vecino más proximo",cex.main=0.8)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Ggorro <- ecdf(distvmp)
+plot(Ggorro, verticals= TRUE, do.p = F, main= "Figura 8: función de distribución acumulada empírica",cex.main=0.8)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center",echo =FALSE}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distvmp,Gt,nrow(robles)),Ggorro(distvmp),type="l",main="Figura 9: comparación distribución teórica y empírica",cex.main=0.8)
+abline(0,1,col=2)
+lims<-Genvl(19,robles)
+lines(sapply(lims$xl,Gt,nrow(robles)),Ggorro(distvmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(robles)),Ggorro(distvmp),col="green")
+```
+
+Si se observa la figura 9, se podra ver como la línea negra que representa la función de distribución empírica es similar a la función de distribución acumulada teórica, linea roja. Así no se puede descartar la hipotésis de aleatoriedad espacial completa atendiendo al criterio de la distancia de un punto al vecino más próximo. 
+
+## Distancias de un punto al suceso más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center",echo =FALSE}
+# La función calcdpsmp() calcula las distancias desde 8*8 puntos aleatorios a los sucesos más próximos
+distpsmp<-sort(caldpsmp(robles,8))
+par(mfrow=c(1,2))
+hist(distpsmp, main = "Figura 10: histograma de las distancias al vecino suceso más próximo",cex.main=0.6)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Fgorro <- ecdf(distpsmp)
+plot(Fgorro, verticals= TRUE, do.p = F, main="Figura 11: función de distribución acumulada empírica",cex.main=0.6)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center",echo =FALSE}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distpsmp,Gt,nrow(robles)),Fgorro(distpsmp),type="l", main = "Figura 12: comparación distribución teórica y empírica",cex.main=0.8)
+abline(0,1,col=2)
+lims<-Fenvl(19,robles,8)
+lines(sapply(lims$xl,Gt,nrow(robles)),Fgorro(distpsmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(robles)),Fgorro(distpsmp),col="green")
+```  
+
+Puesto que la linea negra, que representa la función de distribución empírica, no se aleja de la linea roja, que representa la función de distribución teórica, se puede concluir que no existe evidencia suficiente para descartar la hipótesis de aleatoriedad espacial completa mediante el metodo de la distancia el suceso más próximo. 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Estudio descriptivo de pantrones puntuales de arces
+
+```{r,echo =FALSE}
+arces<-matrix(scan('arces.d'),ncol=2,byrow=T)
+source('utilpp.r')
+par(pty='s')
+plot(arces,pch=20,xlab='x',ylab='y', main="Figura 13: patrones puntuales de arces", cex.main=0.8)
+```  
+
+A simple vista, en la Figura 13, existe indicio que hace dudar sobre la aleatoriedad espacial completa en la distribución de los arces presentes en este conjunto de datos.
+
+## Analisis mediante un grid de quadrats
+
+```{r,echo =FALSE}
+par(mfrow=c(1,1),pty="s")
+plot(arces,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20, main="Figura 14: patrones puntuales de arces + grid de quadrats",cex.main=0.8)
+dibu.qua(4,4)
+nump.qua<-c(cuenta.qua(arces,4,4))
+chisq.test(nump.qua)
+```  
+El test $\chi²$ realizado sobre el conteo de la ocurrencia de arces en las distintos quadrats descarta la hipótesis núla de aleatoriedad espacial completa con un p-valor de 2.2e-16. Se ha comprobado que al aumentar el número de quadrats se sigue descartando la hipótesis nula de aleatoriedad espacial completa, resultados no mostrados. 
+
+## Análisis mediante un muestreo con quadrats aleatorios.
+
+```{r,echo =FALSE}
+centros.qua<-Simqalea(20,0.08)
+plot(arces,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20, main="Figura 15: patrones puntuales de arces + quadrats aleatorias",cex.main=0.8)
+# La función dibalea.qua() dibuja los quadrats circulares simulados
+dibalea.qua(centros.qua)
+# La función cupenl.qua() calcula cuantos sucesos hay en cada quadrat
+nump.qua<-cupenl.qua(arces,centros.qua)
+# La función indices.qua() calcula los índices de agrupación
+indices.qua(nump.qua)
+```
+
+Si se observa la varianza relativa, el indice de David-Moore y la Desigualdad de Lloyd el hecho de que sean mucho mayores que 1 hace sospechar de una desviación clara de la aleatoriedad espacial completa.
+
+## Métodos de distancia
+
+```{r,echo =FALSE}
+# Calculamos todas las distancias entre los sucesos
+# La función genérica dist() crea una matriz (n,n) de distancias
+# La función sort() ordena y convierte en vector las n*(n-1)/2 distancias
+distan<-sort(dist(arces))
+par(mfrow=c(1,2))
+hist(distan, main="Figura 16: histograma de las distancias",cex.main=0.8)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Hgorro <- ecdf(distan)
+plot(Hgorro, verticals= TRUE, do.p = F, main="Figura 17: funcion de distribución acumulada empírica",cex.main=0.8)
+par(mfrow=c(1,1))
+# Compararemos la distribución empírica con la teórica Ht()
+plot(sapply(distan,Ht),Hgorro(distan),type="l", main="Figura 18:  comparación distribución teórica y empírica",cex.main=0.8)
+
+# La línea roja marca el ajuste perfecto con la aleatoridad espacial completa
+abline(0,1,col=2)
+# La función Henvl() calcula 19 simulaciones de patrones completamente aleatorios 
+# y determina el mínimo y el máximo de la función H empírica para cada distancia
+lims<-Henvl(19,arces)
+# Se pintan en verde los límites inferior y superior de las simulaciones
+lines(sapply(lims$xl,Ht),Hgorro(distan),col="green")
+lines(sapply(lims$xu,Ht),Hgorro(distan),col="green")
+```  
+
+Atendiendo a la figura 18, se podrá ver como la linea negra que representa la funcion de distribución acumulada empírica se encuentra fuera del área delimitada por la linea verde que muestra los máximo y mínimos de variación aleatoria de la función de distribución teórica. Esto hace que exista evidencia para descartar la hipótesis de aleatoriedad espacial completa, mediante el criterio de la distancia entre sucesos. 
+
+
+
+## Distancias al vecino más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center",echo =FALSE}
+# La función calcdvmp() calcula las distancias al vecino más próximo
+distvmp<-sort(calcdvmp(arces))
+par(mfrow=c(1,2))
+hist(distvmp, main = "Figura 19: histograma de las distancias al vecino más proximo",cex.main=0.8)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Ggorro <- ecdf(distvmp)
+plot(Ggorro, verticals= TRUE, do.p = F, main= "Figura 20: función de distribución acumulada empírica",cex.main=0.8)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center",echo =FALSE}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distvmp,Gt,nrow(arces)),Ggorro(distvmp),type="l",main="Figura 21: comparación distribución teórica y empírica",cex.main=0.8)
+abline(0,1,col=2)
+lims<-Genvl(19,arces)
+lines(sapply(lims$xl,Gt,nrow(arces)),Ggorro(distvmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(arces)),Ggorro(distvmp),col="green")
+```
+
+Si se observa la figura 21, se podrá ver como la línea negra que representa la función de distribución empírica se encuentra fuera del área delimitada por la linea verde lo que implica una desviación con la función de distribución teórica. Así se puede descartar la hipótesis de aleatoriedad espacial completa atendiendo al criterio de la distancia de un punto al vecino más próximo. 
+
+## Distancias de un punto al suceso más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center",echo =FALSE}
+# La función calcdpsmp() calcula las distancias desde 8*8 puntos aleatorios a los sucesos más próximos
+distpsmp<-sort(caldpsmp(arces,8))
+par(mfrow=c(1,2))
+hist(distpsmp, main = "Figura 22: histograma de las distancias al vecino suceso más próximo",cex.main=0.6)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Fgorro <- ecdf(distpsmp)
+plot(Fgorro, verticals= TRUE, do.p = F, main="Figura 23: función de distribución acumulada empírica",cex.main=0.6)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center",echo =FALSE}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distpsmp,Gt,nrow(arces)),Fgorro(distpsmp),type="l", main = "Figura 24: comparación distribución teórica y empírica",cex.main=0.8)
+abline(0,1,col=2)
+lims<-Fenvl(19,arces,8)
+lines(sapply(lims$xl,Gt,nrow(arces)),Fgorro(distpsmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(arces)),Fgorro(distpsmp),col="green")
+```  
+
+Puesto que la linea negra, que representa la función de distribución empírica, se aleja de la linea roja, que representa la función de distribución teórica, se puede concluir que existe evidencia suficiente para descartar la hipótesis de aleatoriedad espacial completa mediante el método de la distancia el suceso más próximo.
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Estudio descriptivo de pantrones puntuales de secuoyas
+
+```{r,echo =FALSE}
+secuoyas<-matrix(scan('secuoyas.d'),ncol=2,byrow=T)
+source('utilpp.r')
+par(pty='s')
+plot(secuoyas,pch=20,xlab='x',ylab='y', main="Figura 25: patrones puntuales de secuoyas", cex.main=0.8)
+```  
+
+A simple vista, en la Figura 25, existe indicio que hace dudar sobre la aleatoriedad espacial completa en la distribución de los secuoyas presentes en este conjunto de datos.
+
+## Analisis mediante un grid de quadrats
+
+```{r,echo =FALSE}
+par(mfrow=c(1,1),pty="s")
+plot(secuoyas,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20, main="Figura 26: patrones puntuales de secuoyas + grid de quadrats",cex.main=0.8)
+dibu.qua(4,4)
+nump.qua<-c(cuenta.qua(secuoyas,4,4))
+chisq.test(nump.qua)
+```  
+El test $\chi²$ realizado sobre el conteo de la ocurrencia de secuoyas en las distintos quadrats descarta la hipótesis nula de aleatoriedad espacial completa con un p-valor de 2.2e-16. Se ha comprobado que al aumentar el número de quadrats se sigue descartando la hipótesis nula de aleatoriedad espacial completa, resultados no mostrados. 
+
+## Análisis mediante un muestreo con quadrats aleatorios.
+
+```{r,echo =FALSE}
+centros.qua<-Simqalea(20,0.08)
+plot(secuoyas,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20, main="Figura 27: patrones puntuales de secuoyas + quadrats aleatorias",cex.main=0.8)
+# La función dibalea.qua() dibuja los quadrats circulares simulados
+dibalea.qua(centros.qua)
+# La función cupenl.qua() calcula cuantos sucesos hay en cada quadrat
+nump.qua<-cupenl.qua(secuoyas,centros.qua)
+# La función indices.qua() calcula los índices de agrupación
+indices.qua(nump.qua)
+```
+
+Si se observa la varianza relativa, el indice de David-Moore y la Desigualdad de Lloyd el hecho de que sean mucho mayores que 1 hace sospechar de una desviación clara de la aleatoriedad espacial completa.
+
+## Métodos de distancia
+
+```{r,echo =FALSE}
+# Calculamos todas las distancias entre los sucesos
+# La función genérica dist() crea una matriz (n,n) de distancias
+# La función sort() ordena y convierte en vector las n*(n-1)/2 distancias
+distan<-sort(dist(secuoyas))
+par(mfrow=c(1,2))
+hist(distan, main="Figura 28: histograma de las distancias",cex.main=0.8)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Hgorro <- ecdf(distan)
+plot(Hgorro, verticals= TRUE, do.p = F, main="Figura 29: funcion de distribución acumulada empírica",cex.main=0.8)
+par(mfrow=c(1,1))
+# Compararemos la distribución empírica con la teórica Ht()
+plot(sapply(distan,Ht),Hgorro(distan),type="l", main="Figura 30:  comparación distribución teórica y empírica",cex.main=0.8)
+
+# La línea roja marca el ajuste perfecto con la aleatoridad espacial completa
+abline(0,1,col=2)
+# La función Henvl() calcula 19 simulaciones de patrones completamente aleatorios 
+# y determina el mínimo y el máximo de la función H empírica para cada distancia
+lims<-Henvl(19,secuoyas)
+# Se pintan en verde los límites inferior y superior de las simulaciones
+lines(sapply(lims$xl,Ht),Hgorro(distan),col="green")
+lines(sapply(lims$xu,Ht),Hgorro(distan),col="green")
+```  
+
+Atendiendo a la figura 18, se podrá ver como la linea negra que representa la funcion de distribución acumulada empírica se encuentra parcialmente fuera del área delimitada por la linea verde que muestra los máximo y mínimos de variación aleatoria de la función de distribución teórica. Esto hace que exista evidencia para descartar la hipótesis de aleatoriedad espacial completa, mediante el criterio de la distancia entre ocurrencias. 
+
+
+
+## Distancias al vecino más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center",echo =FALSE}
+# La función calcdvmp() calcula las distancias al vecino más próximo
+distvmp<-sort(calcdvmp(secuoyas))
+par(mfrow=c(1,2))
+hist(distvmp, main = "Figura 31: histograma de las distancias al vecino más proximo",cex.main=0.8)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Ggorro <- ecdf(distvmp)
+plot(Ggorro, verticals= TRUE, do.p = F, main= "Figura 32: función de distribución acumulada empírica",cex.main=0.8)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center",echo =FALSE}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distvmp,Gt,nrow(secuoyas)),Ggorro(distvmp),type="l",main="Figura 33: comparación distribución teórica y empírica",cex.main=0.8)
+abline(0,1,col=2)
+lims<-Genvl(19,secuoyas)
+lines(sapply(lims$xl,Gt,nrow(secuoyas)),Ggorro(distvmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(secuoyas)),Ggorro(distvmp),col="green")
+```
+
+Si se observa la figura 33, se podrá ver como la línea negra que representa la función de distribución empírica se encuentra fuera del área delimitada por la linea verde lo que implica una desviación con la función de distribución teórica. Así se puede descartar la hipótesis de aleatoriedad espacial completa atendiendo al criterio de la distancia de un punto al vecino más próximo. 
+
+## Distancias de un punto al suceso más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center",echo =FALSE}
+# La función calcdpsmp() calcula las distancias desde 8*8 puntos aleatorios a los sucesos más próximos
+distpsmp<-sort(caldpsmp(secuoyas,8))
+par(mfrow=c(1,2))
+hist(distpsmp, main = "Figura 34: histograma de las distancias al vecino suceso más próximo",cex.main=0.6)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Fgorro <- ecdf(distpsmp)
+plot(Fgorro, verticals= TRUE, do.p = F, main="Figura 35: función de distribución acumulada empírica",cex.main=0.6)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center",echo =FALSE}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distpsmp,Gt,nrow(secuoyas)),Fgorro(distpsmp),type="l", main = "Figura 36: comparación distribución teórica y empírica",cex.main=0.8)
+abline(0,1,col=2)
+lims<-Fenvl(19,secuoyas,8)
+lines(sapply(lims$xl,Gt,nrow(secuoyas)),Fgorro(distpsmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(secuoyas)),Fgorro(distpsmp),col="green")
+```  
+
+Puesto que la linea negra, que representa la función de distribución empírica, no se aleja de la linea roja, que representa la función de distribución teórica, se puede concluir que no existe evidencia suficiente para descartar la hipótesis de aleatoriedad espacial completa mediante el método de la distancia el suceso más próximo.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# Estudio descriptivo de pantrones puntuales de pinos
+
+```{r,echo =FALSE}
+source("pinos.r")
+source('utilpp.r')
+par(pty='s')
+plot(pinos,pch=20,xlab='x',ylab='y', main="Figura 37: patrones puntuales de pinos", cex.main=0.8)
+```  
+
+A simple vista, en la Figura 37, no existe indicio que haga dudar sobre la aleatoriedad espacial completa en la distribución de los pinos presentes en este conjunto de datos.
+
+## Analisis mediante un grid de quadrats
+
+```{r,echo =FALSE}
+par(mfrow=c(1,1),pty="s")
+plot(pinos,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20, main="Figura 38: patrones puntuales de pinos + grid de quadrats",cex.main=0.8)
+dibu.qua(4,4)
+nump.qua<-c(cuenta.qua(pinos,4,4))
+chisq.test(nump.qua)
+```  
+El test $\chi²$ realizado sobre el conteo de la ocurrencia de pinos en las distintos quadrats no descarta la hipótesis nula de aleatoriedad espacial completa con un p-valor de 0.9198. Se ha comprobado que al aumentar el número de quadrats se sigue descartando la hipótesis nula de aleatoriedad espacial completa, resultados no mostrados. 
+
+## Análisis mediante un muestreo con quadrats aleatorios.
+
+```{r,echo =FALSE}
+centros.qua<-Simqalea(20,0.08)
+plot(pinos,xlim=c(0,1),ylim=c(0,1),xlab="",ylab="",xaxs="i",yaxs="i",pch=20, main="Figura 39: patrones puntuales de pinos + quadrats aleatorias",cex.main=0.8)
+# La función dibalea.qua() dibuja los quadrats circulares simulados
+dibalea.qua(centros.qua)
+# La función cupenl.qua() calcula cuantos sucesos hay en cada quadrat
+nump.qua<-cupenl.qua(pinos,centros.qua)
+# La función indices.qua() calcula los índices de agrupación
+indices.qua(nump.qua)
+```
+
+Si se observa la varianza relativa, el indice de David-Moore y la Desigualdad de Lloyd el hecho de que sean menores que 1 no hace sospechar de una desviación de la aleatoriedad espacial completa.
+
+## Métodos de distancia
+
+```{r,echo =FALSE}
+# Calculamos todas las distancias entre los sucesos
+# La función genérica dist() crea una matriz (n,n) de distancias
+# La función sort() ordena y convierte en vector las n*(n-1)/2 distancias
+distan<-sort(dist(pinos))
+par(mfrow=c(1,2))
+hist(distan, main="Figura 40: histograma de las distancias",cex.main=0.8)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Hgorro <- ecdf(distan)
+plot(Hgorro, verticals= TRUE, do.p = F, main="Figura 41: funcion de distribución acumulada empírica",cex.main=0.8)
+par(mfrow=c(1,1))
+# Compararemos la distribución empírica con la teórica Ht()
+plot(sapply(distan,Ht),Hgorro(distan),type="l", main="Figura 42:  comparación distribución teórica y empírica",cex.main=0.8)
+
+# La línea roja marca el ajuste perfecto con la aleatoridad espacial completa
+abline(0,1,col=2)
+# La función Henvl() calcula 19 simulaciones de patrones completamente aleatorios 
+# y determina el mínimo y el máximo de la función H empírica para cada distancia
+lims<-Henvl(19,pinos)
+# Se pintan en verde los límites inferior y superior de las simulaciones
+lines(sapply(lims$xl,Ht),Hgorro(distan),col="green")
+lines(sapply(lims$xu,Ht),Hgorro(distan),col="green")
+```  
+
+Atendiendo a la figura 18, se podrá ver como la linea negra que representa la funcion de distribución acumulada empírica se encuentra dentro del área delimitada por la linea verde que muestra los máximo y mínimos de variación aleatoria de la función de distribución teórica. Esto hace que no exista evidencia para descartar la hipótesis de aleatoriedad espacial completa, mediante el criterio de la distancia entre ocurrencias. 
+
+
+
+## Distancias al vecino más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center",echo =FALSE}
+# La función calcdvmp() calcula las distancias al vecino más próximo
+distvmp<-sort(calcdvmp(pinos))
+par(mfrow=c(1,2))
+hist(distvmp, main = "Figura 43: histograma de las distancias al vecino más proximo",cex.main=0.8)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Ggorro <- ecdf(distvmp)
+plot(Ggorro, verticals= TRUE, do.p = F, main= "Figura 44: función de distribución acumulada empírica",cex.main=0.8)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center",echo =FALSE}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distvmp,Gt,nrow(pinos)),Ggorro(distvmp),type="l",main="Figura 45: comparación distribución teórica y empírica",cex.main=0.8)
+abline(0,1,col=2)
+lims<-Genvl(19,pinos)
+lines(sapply(lims$xl,Gt,nrow(pinos)),Ggorro(distvmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(pinos)),Ggorro(distvmp),col="green")
+```
+
+Si se observa la figura 45, se podrá ver como la línea negra que representa la función de distribución empírica se encuentra fuera del área delimitada por la linea verde lo que implica una desviación con la función de distribución teórica. Así se puede descartar la hipótesis de aleatoriedad espacial completa atendiendo al criterio de la distancia de un punto al vecino más próximo. 
+
+## Distancias de un punto al suceso más próximo
+
+```{r, warning=FALSE, message=FALSE, fig.width=8, fig.height=4, fig.align="center",echo =FALSE}
+# La función calcdpsmp() calcula las distancias desde 8*8 puntos aleatorios a los sucesos más próximos
+distpsmp<-sort(caldpsmp(pinos,8))
+par(mfrow=c(1,2))
+hist(distpsmp, main = "Figura 46: histograma de las distancias al vecino suceso más próximo",cex.main=0.6)
+# La función genérica ecdf() calcula la función de distribución acumulada empírica 
+Fgorro <- ecdf(distpsmp)
+plot(Fgorro, verticals= TRUE, do.p = F, main="Figura 47: función de distribución acumulada empírica",cex.main=0.6)
+```
+
+```{r, warning=FALSE, message=FALSE, fig.width=6, fig.height=6, fig.align="center",echo =FALSE}
+# Compararemos la distribución empírica con la teórica Gt()
+plot(sapply(distpsmp,Gt,nrow(pinos)),Fgorro(distpsmp),type="l", main = "Figura 48: comparación distribución teórica y empírica",cex.main=0.8)
+abline(0,1,col=2)
+lims<-Fenvl(19,pinos,8)
+lines(sapply(lims$xl,Gt,nrow(pinos)),Fgorro(distpsmp),col="green")
+lines(sapply(lims$xu,Gt,nrow(pinos)),Fgorro(distpsmp),col="green")
+```  
+
+Puesto que la linea negra, que representa la función de distribución empírica, no se aleja demasiado de la linea roja, que representa la función de distribución teórica, se puede concluir que no existe evidencia suficiente para descartar la hipótesis de aleatoriedad espacial completa mediante el método de la distancia el suceso más próximo.
