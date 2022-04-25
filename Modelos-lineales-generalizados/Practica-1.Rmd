@@ -1,0 +1,90 @@
+---
+title: "Practica-1"
+author: "Juan Cantero Jimenez"
+date: "4/25/2022"
+output: pdf_document
+---
+
+```{r}
+#lectura de los datos
+titanic.train <- titanic::titanic_train
+titanic_test <- titanic::titanic_test
+#Carga de librerias
+library(Hmisc)
+
+```
+
+# Modelización dataset titanic
+
+El dataset titanic de la libreria titanic contiene información relevante de los pasajeros del crucero Titanic. En esta se recoge si sobrevivieron, variable Survived; la clase del pasajero, variable Pclass; el nombre del individuo, variable Name; el sexo, variable Sex; la edad, variable Age; el numero de esposas o hermanas, variable SibSp; el numero de padres o hijos, variable Parch; el numero de ticket, variable Ticket; la tarifa que pagaron por el pasaje, variable Fare; la cabina en la que se aloja, variable Cabin; el id del passajero, PassengerId; y el puerto de embarque, variable Embarked. Se esta interasado en modelizar la supervivencia del individuo en función de los datos de estos. 
+
+## a) Identifica la variable respuesta y las variables explicativas. Especifica si son categóricas (nominales u ordinales) o cuantitativas (discretas o continuas).
+
+La variable respuesta es Survived, cuantitativa discreta, puesto que nos interesa modelizar la supervivencia de los individuos en función de unas variables explicativas. Se descartan las variables PassengerId, Name, Ticket, Cabin puesto que ofrecen información especifica de cada individuo que no permite relacionar a este con otros. Además se propone extraer la información del titulo de la persona, algo que tambien aparece en la variable Name, pues puede aportar el estatus sociocultural del individuo. Esta ha sido extraida haciendo uso de expresiones regulares y se alojan en la variable Title.  Las variables explicativas seran Pclass, categórica ordinal; Sex, categorica nominal; Age, cuantitativa continua; SibSp, cuantitativa discreta; Parch, cuantitativa discreta; Fare, cuantitativa continuna; Embarked, categórica nominal y Title, categórica nominal.
+
+## b) Analisis exploratorio de los datos
+
+El analis exploratorio mostrado se ha realizado sobre el dataset con las variables descritas anteriormente al que además se le han retirado los NA. 
+
+```{r}
+titanic.t <- titanic.train[,c("Survived", "Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked")]
+titanic.t <- titanic.t[!titanic.t$Embarked=="",]
+title <- res<-sapply(titanic.train[!titanic.train$Embarked=="",]$Name, function(x){
+  
+  m<-regexpr(",.{1,20}\\.", x)
+  first.result <- regmatches(x, m)
+  m2 <- regexpr("\\w{1,2}.{0,20}\\w", first.result)
+  regmatches(first.result, m2)
+  
+})
+
+titanic.t$Title <- as.factor(title)
+titanic.t$Pclass <- as.factor(titanic.t$Pclass)
+titanic.t$Sex <- as.factor(titanic.t$Sex)
+titanic.t$Embarked <- as.factor(titanic.t$Embarked)
+titanic.t <- na.omit(titanic.t)
+
+str(titanic.t)
+par(mfrow=c(2,2))
+hist(titanic.t$Age, main="Histograma variable Age", xlab="")
+hist(titanic.t$SibSp, main="Histograma variable SibSp",xlab="")
+hist(titanic.t$Parch, main="Histograma variable Parch", xlab="")
+hist(titanic.t$Fare, main="Histograma variable Fare", xlab="")
+mtext("Figura 1", side = 3, line = -15, outer = TRUE)
+
+par(mfrow=c(2,4))
+counts1 <- table(titanic.t$Fare, titanic.t$Survived)
+props1 <- as.vector(counts1[,2]/table(titanic.t$Fare))
+plot(rownames(counts1),props1,xlab="Precio")
+
+counts2 <- table(titanic.t$Pclass, titanic.t$Survived)
+props2 <- as.vector(counts2[,2]/table(titanic.t$Pclass))
+barplot(props2,xlab="Clases", ylab="Tasa Supervivencia", name=rownames(counts2))
+
+counts3 <- table(titanic.t$Sex, titanic.t$Survived)
+props3 <- as.vector(counts3[,2]/table(titanic.t$Sex))
+barplot(props3,xlab="genero", ylab="Tasa Supervivencia", name=rownames(counts3))
+
+counts4 <- table(titanic.t$SibSp, titanic.t$Survived)
+props4 <- as.vector(counts4[,2]/table(titanic.t$SibSp))
+barplot(props4,xlab="Numero de hermanas/esposas", ylab="Tasa Supervivencia", name=rownames(counts4))
+
+counts5 <- table(titanic.t$Parch, titanic.t$Survived)
+props5 <- as.vector(counts5[,2]/table(titanic.t$Parch))
+barplot(props5,xlab="Numero de padres/hijos", ylab="Tasa Supervivencia", name=rownames(counts5))
+
+counts6 <- table(titanic.t$Title, titanic.t$Survived)
+props6 <- as.vector(counts6[,2]/table(titanic.t$Title))
+barplot(props6,xlab="",ylab="Tasa Supervivencia", name=rownames(counts6), las = 2)
+
+counts7 <- table(titanic.t$Age, titanic.t$Survived)
+props7 <- as.vector(counts7[,2]/table(titanic.t$Age))
+plot(rownames(counts7), props7, ylab="Tasa Supervivencia", xlab="Edad")
+
+counts8 <- table(titanic.t$Embarked, titanic.t$Survived)
+props8 <- as.vector(counts8[,2]/table(titanic.t$Embarked))
+barplot(props8,xlab="Puerto de Embarque", ylab="Tasa Supervivencia", name=rownames(counts8))
+```  
+
+Si se observa la Figura 1 se podrá observar como 
+
