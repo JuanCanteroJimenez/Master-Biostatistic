@@ -88,3 +88,48 @@ barplot(props8,xlab="Puerto de Embarque", ylab="Tasa Supervivencia", name=rownam
 
 Si se observa la Figura 1 se podrá observar como 
 
+## c) Describe la distribución de probabilidad que se puede asumir para la variable respuesta. ¿Cuál es el parámetro de interés?.
+
+La variable respuesta, Survived, toma dos valores 0 e 1 indicando la muerte o supervivencia de los 712 pasajeros presentes en el evento que sufrió el crucero Titanic y de los que se disponen todos los datos para las variables explicativas escogidas. Así $Survived_{i}(i = 1, ..., 712)\:i.i.d.\:Br(\pi_{j})$. Esta distribución se corresponde con un caso especial de la distribución binomial en la que el número de intentos es igual a 1. Así se decide discretizar las variables Age y Fare en periodos de 20 años la primera y de 200 U la segunda y agrupar los datos de tal forma que el número de supervivientes se pueda agrupar. Así para este segundo modelo la distribución será binomial es decir $Survived.g_{j} (j = 1, ..., g)\:i.i.d.\: Bin(m_{j},\pi_{j})$ Donde g es el número de individuos en cada observación y j el número de observaciones. En cada caso el parámetro de interés es $\pi$.
+
+```{r}
+age.discrete <- cut(titanic.t$Age, breaks=c(0,20,40,60,80,100))
+fare.discrete <- cut(titanic.t$Fare, breaks=c(0,300,600))
+titanic.t.g <- titanic.t[,!(names(titanic.t) == "Age" | names(titanic.t) == "Fare")]
+titanic.t.g$Age.g <- age.discrete
+titanic.t.g$Fare.g <- fare.discrete
+titanic.procesing<-as.data.frame.table(with(titanic.t.g, table(Survived, Pclass, Sex, SibSp, Parch, Embarked, Title, Age.g, Fare.g)))# Reduce el número de individuos de 712 a 705
+titanic.desing.m3<-aggregate(Freq ~ Pclass +  Sex  + SibSp + Parch + Embarked + Title + Age.g + Fare.g , titanic.procesing, sum)
+titanic.desing.m3$Total <- titanic.desing.m3$Freq
+titanic.desing.m3 <- titanic.desing.m3[,-which(names(titanic.desing.m3) == "Freq")]
+titanic.desing.m3$Survived <- aggregate(Freq ~ Pclass +  Sex  + SibSp + Parch + Embarked + Title + Age.g + Fare.g , titanic.procesing[titanic.procesing$Survived == "1",], sum)$Freq
+titanic.desing.m3 <- titanic.desing.m3[!(titanic.desing.m3$Total == 0),]
+titanic.t.g <- titanic.desing.m3
+titanic.t.g$SibSp <- as.numeric(titanic.t.g$SibSp)
+titanic.t.g$Parch <- as.numeric(titanic.t.g$Parch)
+```
+
+
+## d) Propón un modelo lineal generalizado que incluya todas las variables disponibles
+e indica también el(los) link(s) a utilizar. Resuelve dicho(s) modelo(s) y valora la
+aplicabilidad del método utilizado.
+
+```{r}
+aji1.logit <- glm(Survived ~ ., family = binomial(link="logit"), data=titanic.t)
+ajg1.logit <- glm(cbind(Total, Survived) ~ ., family = binomial(link="logit"), data=titanic.t.g )
+aji1.probit <- glm(Survived ~ ., family = binomial(link="probit"), data=titanic.t)
+ajg1.probit <- glm(cbind(Total, Survived) ~ ., family = binomial(link="probit"), data=titanic.t.g )
+aji1.cloglog <- glm(Survived ~ ., family = binomial(link="cloglog"), data=titanic.t)
+ajg1.cloglog <- glm(cbind(Total, Survived) ~ ., family = binomial(link="cloglog"), data=titanic.t.g )
+```
+
+
+# 2 Modelización quejas
+
+
+```{r}
+#lectura de los datos
+quejas<-read.table("quejas.dat", header = T)
+
+```
+
