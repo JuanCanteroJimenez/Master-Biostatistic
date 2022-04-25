@@ -131,6 +131,12 @@ summary(aj.logit)
 ```
 
 ```{r}
+aj.logit <- glm(Survived ~ Parch  + SibSp + Pclass + title , family = binomial(link="logit"), data=titanic.work)
+summary(aj.logit)
+```
+
+
+```{r}
 aj.cloglog <- glm(Survived ~ . , family = binomial(link="cloglog"), data=titanic.work)
 summary(aj.cloglog)
 ```
@@ -174,8 +180,72 @@ hoslem.test(titanic.work$Survived, fitted(aj2.probit))
 
 
 ```{r}
-aj2.probit <- glm(Survived ~ Pclass + Sex + SibSp + Parch , family = binomial(link="probit"), data=titanic.work)
-summary(aj2.probit)
-hoslem.test(titanic.work$Survived, fitted(aj2.probit))
+aj2.cloglog <- glm(Survived ~ Pclass + Sex + SibSp + Parch , family = binomial(link="cloglog"), data=titanic.work)
+summary(aj2.cloglog)
+hoslem.test(titanic.work$Survived, fitted(aj2.cloglog))
+```
+
+
+# Volvamos a comenzar 
+
+
+Se retiran las variables, Name, PassengerId, Ticket y Cabin pues aportan información unica del individuo que no se puede relacionar de forma adecuada con otros individuos.
+
+```{r}
+titanic.train.na <- na.omit(titanic::titanic_train)
+head(titanic.train.na)
+titanic.desing.m1 <- titanic.train.na[,c("Survived","Pclass","Sex","Age","SibSp","Parch","Fare","Embarked")]
+```
+```{r}
+aj.glm1 <- glm(Survived ~ ., data = titanic.desing.m1, family=binomial(link="logit"))
+summary(aj.glm1)
+```
+
+Se ha realizado un ajuste con un modelo lineal generalizado con distribución bernouilli y se ha observado que los coeficientes significativos son los de las variables Pclass, Sex, Age y SibSp. Puesto que tras realizar un test de Hosmer and Lemeshow este descartaba la hipotesis nula de un buen modelo, se decide agrupar los datos y probar con un modelo lineal generalizado con distribución binomial sobre las variables significativas. Además se decide categorizar la edad en periodos de 20 años- 
+
+```{r}
+titanic.desing.m2 <- titanic.train.na[,c("Survived","Pclass","Sex","Age","SibSp")]
+age.discrete <- cut(titanic.train.na$Age, breaks=c(0,20,40,60,80,100))
+titanic.train.na$Aged <- age.discrete
+titanic.procesing<-as.data.frame.table(with(titanic.train.na, table(Survived, Pclass, Sex, Aged, SibSp)))
+titanic.desing.m3<-aggregate(Freq ~ Pclass + Sex + Aged + SibSp, titanic.procesing, sum)
+titanic.desing.m3$Total <- titanic.desing.m3$Freq
+titanic.desing.m3 <- titanic.desing.m3[,-which(names(titanic.desing.m3) == "Freq")]
+titanic.desing.m3$Survived <- aggregate(Freq ~ Pclass + Sex + Aged + SibSp, titanic.procesing[titanic.procesing$Survived == "1",], sum)$Freq
+titanic.desing.m3 <- titanic.desing.m3[!(titanic.desing.m3$Total == 0),]
+```
+
+
+```{r}
+
+aj.glm2 <- glm(cbind(Total, Survived) ~  ., family = binomial(link = "logit"), data=titanic.desing.m3)
+summary(aj.glm2)
+aj.glm3 <- glm(cbind(Total, Survived) ~  Pclass + Aged + Sex, family = binomial(link = "logit"), data=titanic.desing.m3)
+anova(aj.glm2, aj.glm3)
+```  
+No se encuentran diferencias significativas entre la adición o no de SibSp asi que se retira esta
+
+```{r}
+summary(aj.glm3)
+pchisq(aj.glm3$deviance ,aj.glm3$df.residual)
+
+
+
+```
+
+# Probamos con distintas interacciones
+
+
+
+```{r}
+aj.glm4 <- glm(cbind(Total, Survived) ~  Pclass + Aged + Sex + Pclass:Aged, family = binomial(link = "logit"), data=titanic.desing.m3)
+summary(aj.glm4)
+anova(aj.glm3, aj.glm4)
+```
+
+```{r}
+aj.glm5 <- glm(cbind(Total, Survived) ~  Pclass + Aged + Sex + Pclass:Sex, family = binomial(link = "logit"), data=titanic.desing.m3)
+summary(aj.glm5)
+anova(aj.glm4, test = "Chisq")
 ```
 

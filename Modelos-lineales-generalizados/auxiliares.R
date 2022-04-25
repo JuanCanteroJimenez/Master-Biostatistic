@@ -18,7 +18,10 @@ datos
 
 datos <- read.table("chdage.dat",header=T)
 attach(datos)
-par(mfrow=c(2,1))
+
+
+
+
 plot(AGE,CHD,xlab="Edad")
 # table(AGRP)
 counts <- table(titanic.work$Fare, titanic.work$Survived)
