@@ -1,0 +1,611 @@
+---
+title: "Tarea 1"
+author: "Juan Cantero Jimenez"
+date: "4/26/2022"
+output: pdf_document
+---
+
+```{r, include=F}
+library(kableExtra)
+library(Hmisc)
+library(psych)
+library(ResourceSelection)
+library(boot)
+```
+
+
+# Modelización banco de datos titanic::titanic_train
+
+## a) Identificación de variables y principales características
+
+```{r, message=F, echo = F, warning=F, cat=F, results='hide', include=F}
+#lectura de los datos
+titanic.train <- titanic::titanic_train
+titanic_test <- titanic::titanic_test
+#Carga de librerias
+library(Hmisc)
+titanic.t <- titanic.train[,c("Survived", "Pclass", "Sex", "Age", "SibSp", "Parch", "Fare", "Embarked")]
+titanic.t <- titanic.t[!titanic.t$Embarked=="",]
+title <- res<-sapply(titanic.train[!titanic.train$Embarked=="",]$Name, function(x){
+m<-regexpr(",.{1,20}\\.", x)
+first.result <- regmatches(x, m)
+m2 <- regexpr("\\w{1,2}.{0,20}\\w", first.result)
+regmatches(first.result, m2)
+})
+titanic.t$Title <- as.factor(title)
+titanic.t$Pclass <- as.factor(titanic.t$Pclass)
+titanic.t$Sex <- as.factor(titanic.t$Sex)
+titanic.t$Embarked <- as.factor(titanic.t$Embarked)
+titanic.t <- na.omit(titanic.t)
+#str(titanic.t)
+```
+
+
+```{r, tabla-1, results='asis', echo=F}
+
+tabla1 <- data.frame(Variables = names(titanic.t),
+                     Tipo = c("Cuantitativa",
+                              "Categórica",
+                              "Categórica",
+                              "Cuantitativa",
+                              "Cuantitativa",
+                              "Cuantitativa",
+                              "Cuantitativa",
+                              "Categórica",
+                              "Categórica"),
+                     Subtipo = c("Discreta",
+                                 "ordinal",
+                                 "nominal",
+                                 "continua",
+                                 "discreta",
+                                 "discreta",
+                                 "continua",
+                                 "nominal",
+                                 "nominal"),
+                     Rol = c("respuesta",rep("explicativa",8)),
+                     Descripción = c("Indicacor de supervivencia del pasajero",
+                                     "clase del pasajero",
+                                     "sexo del individuo",
+                                     "edad del individuo",
+                                     "Numero de hermanas/esposas",
+                                     "Numero de padres/hijos",
+                                     "Tarifa pagada",
+                                     "Puerto de embarque",
+                                     "Titulo honorífico del individuo"))
+kable_styling(kbl(tabla1, caption = " Variables usadas en el modelo"), html_font = "Cambria", latex_options = "HOLD_position")
+```   
+
+## b) Análisis descriptivo de los datos
+
+```{r, tabla-2, results='asis',echo=F}
+tabla2<-psych::describe(titanic.t)
+kable_styling(kbl(tabla2, caption = "Descriptiva numérica de los datos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+```
+
+
+
+```{r,fig.width=12, fig.height=8, echo=F}
+hist.data.frame(titanic.t[,c("Age", "SibSp","Parch","Fare")], mtitl = "Figura 1: Histogramas variables cuantitativas", cex=1)
+```
+
+```{r, echo=FALSE,fig.width=12, fig.height=8}
+par(mfrow=c(2,4), oma = c(0,0,2,0))
+counts1 <- table(titanic.t$Fare, titanic.t$Survived)
+props1 <- as.vector(counts1[,2]/table(titanic.t$Fare))
+plot(rownames(counts1),props1,xlab="Precio", ylab="Tasa Supervivencia")
+
+counts2 <- table(titanic.t$Pclass, titanic.t$Survived)
+props2 <- as.vector(counts2[,2]/table(titanic.t$Pclass))
+barplot(props2,xlab="Clases", ylab="Tasa Supervivencia", name=rownames(counts2))
+
+counts3 <- table(titanic.t$Sex, titanic.t$Survived)
+props3 <- as.vector(counts3[,2]/table(titanic.t$Sex))
+barplot(props3,xlab="genero", ylab="Tasa Supervivencia", name=rownames(counts3))
+
+counts4 <- table(titanic.t$SibSp, titanic.t$Survived)
+props4 <- as.vector(counts4[,2]/table(titanic.t$SibSp))
+barplot(props4,xlab="Numero de hermanas/esposas", ylab="Tasa Supervivencia", name=rownames(counts4))
+
+counts5 <- table(titanic.t$Parch, titanic.t$Survived)
+props5 <- as.vector(counts5[,2]/table(titanic.t$Parch))
+barplot(props5,xlab="Numero de padres/hijos", ylab="Tasa Supervivencia", name=rownames(counts5))
+
+counts6 <- table(titanic.t$Title, titanic.t$Survived)
+props6 <- as.vector(counts6[,2]/table(titanic.t$Title))
+barplot(props6,xlab="",ylab="Tasa Supervivencia", name=rownames(counts6), las = 2, cex.names=0.7)
+
+counts7 <- table(titanic.t$Age, titanic.t$Survived)
+props7 <- as.vector(counts7[,2]/table(titanic.t$Age))
+plot(rownames(counts7), props7, ylab="Tasa Supervivencia", xlab="Edad")
+
+counts8 <- table(titanic.t$Embarked, titanic.t$Survived)
+props8 <- as.vector(counts8[,2]/table(titanic.t$Embarked))
+barplot(props8,xlab="Puerto de Embarque", ylab="Tasa Supervivencia", name=rownames(counts8))
+mtext("Figura 2: Relación entre variables explicativas y probabilidad de sobrevivir", outer = TRUE, cex = 1)
+
+```
+
+
+## c) Describe la distribución de probabilidad que se pueda asumir para la variable respuesta ¿Cuál es el parámetro de interés?
+
+Se utilizarán dos distribuciones similares para describir los datos. La primera se trata de una distribución Bernoulli, que describe la probabilidad de exito en una prueba, que modelizará la variable Survived, notese que cada observación se denota como s:
+\begin{gather}
+-\:Función\:de\:probabilidad: f(s \mid \pi) = \pi^{s}(1-\pi)^{1-s}\:si\:s=0,1\\
+-\:Rango\:del\:parámetro:0\leq \pi \leq 1\\
+-\:Media y Varianza: E(Survived) = \pi; Var(Survived) = \pi(1-\pi)
+\end{gather}
+Además se discretizan las variables Age y Fare hacia las variables Age.g y Fare.g permitiendo agrupar los individuos que sobreviven, y así poder ser modelizada mediante una distribución binomial, que describe el número de supervivientes en n individuos que pueden ser entendidos como eventos Bernoulli. Notese que la variable Survived pasara a ser Survived.g y cada evento se denota como sg:
+\begin{gather}
+-\:Función\:de\:probabilidad: f(sg \mid n, \pi) = \binom{n}{sg} \pi^{sg}(1-\pi)^{1-sg}\:si\:sg=0,1,...,n\\
+-\:Rango\:del\:parámetro:0\leq \pi \leq 1\\
+-\:Media y Varianza: E(Survived.g) = n\pi; Var(Survived.g) = n\pi(1-\pi)
+\end{gather}
+
+## d) Modelos lineales generalizados propuestos y validación de estos. 
+
+```{r, include=F}
+age.discrete <- cut(titanic.t$Age, breaks=c(0,40,80))
+fare.discrete <- cut(titanic.t$Fare, breaks=c(0,300,600))
+titanic.t.g <- titanic.t[,!(names(titanic.t) == "Age" | names(titanic.t) == "Fare")]
+titanic.t.g$Age.g <- age.discrete
+titanic.t.g$Fare.g <- fare.discrete
+titanic.procesing<-as.data.frame.table(with(titanic.t.g, table(Survived, Pclass, Sex, SibSp, Parch, Embarked, Title, Age.g, Fare.g)))# Reduce el número de individuos de 712 a 705
+titanic.desing.m3<-aggregate(Freq ~ Pclass +  Sex  + SibSp + Parch + Embarked + Title + Age.g + Fare.g , titanic.procesing, sum)
+titanic.desing.m3$Total <- titanic.desing.m3$Freq
+titanic.desing.m3 <- titanic.desing.m3[,-which(names(titanic.desing.m3) == "Freq")]
+titanic.desing.m3$Survived.g <- aggregate(Freq ~ Pclass +  Sex  + SibSp + Parch + Embarked + Title + Age.g + Fare.g , titanic.procesing[titanic.procesing$Survived == "1",], sum)$Freq
+titanic.desing.m3 <- titanic.desing.m3[!(titanic.desing.m3$Total == 0),]
+titanic.t.g <- titanic.desing.m3
+titanic.t.g$SibSp <- as.numeric(titanic.t.g$SibSp)
+titanic.t.g$Parch <- as.numeric(titanic.t.g$Parch)
+
+```
+
+
+
+
+
+```{r, include = FALSE}
+aj1.ber.logit <- glm(Survived ~ ., family = binomial(link="logit"), data=titanic.t)
+aj1.bi.logit <- glm(cbind(Total, Survived.g) ~ ., family = binomial(link="logit"), data=titanic.t.g )
+aj1.ber.probit <- glm(Survived ~ ., family = binomial(link="probit"), data=titanic.t)
+aj1.bi.probit <- glm(cbind(Total, Survived.g) ~ ., family = binomial(link="probit"), data=titanic.t.g )
+aj1.ber.cloglog <- glm(Survived ~ ., family = binomial(link="cloglog"), data=titanic.t)
+aj1.bi.cloglog <- glm(cbind(Total, Survived.g) ~ ., family = binomial(link="cloglog"), data=titanic.t.g )
+```
+
+```{r,tabla_modelos, results='asis', echo=F}
+table4 <- data.frame(Nombre = c("aj1.ber.logit",
+                                "aj1.bi.logit",
+                                "aj1.ber.probit"
+                                ,"aj1.bi.probit",
+                                "aj1.ber.cloglog",
+                                "aj1.bi.cloglog"),
+                     GLM_call = c("glm(Survived ~ ., family = binomial(link=\"logit\"), data=titanic.t) *",
+                                  "glm(cbind(Total, Survived.g) ~ ., family = binomial(link=\"logit\"), data=titanic.t.g ) †",
+                                  "glm(Survived ~ ., family = binomial(link=\"probit\"), data=titanic.t) *",
+                                  "glm(cbind(Total, Survived.g) ~ ., family = binomial(link=\"probit\"), data=titanic.t.g ) †",
+                                  "glm(Survived ~ ., family = binomial(link=\"cloglog\"), data=titanic.t) *",
+                                  "glm(cbind(Total, Survived.g) ~ ., family = binomial(link=\"cloglog\"), data=titanic.t.g ) †"))
+t4 <- kable_styling(kbl(table4, caption = "Modelos propuesto", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+footnote(t4, symbol=c("El data.frame titanic.t contiene las variables: Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked y Title."," De igual forma el data.frame titanic.t.g contiene las variables: Survived.g, Total, Pclass, Sex, Age.g, SibSp, Parch, Fare.g, Embarked y Title "))
+```
+
+
+```{r,valoracion_ajuste, results='asis', echo = F}
+tabla5 <- data.frame(Modelo = c("aj1.ber.logit",
+                                "aj1.bi.logit",
+                                "aj1.ber.probit"
+                                ,"aj1.bi.probit",
+                                "aj1.ber.cloglog",
+                                "aj1.bi.cloglog"),
+                     Chi.sq = round(c(pchisq(aj1.ber.logit$deviance,df=aj1.ber.logit$df.residual, lower.tail = F),
+                                      pchisq(aj1.bi.logit$deviance,df=aj1.bi.logit$df.residual, lower.tail = F),
+                                      pchisq(aj1.ber.probit$deviance,df=aj1.ber.probit$df.residual, lower.tail = F),
+                                      pchisq(aj1.bi.probit$deviance,df=aj1.bi.probit$df.residual, lower.tail = F),
+                                      pchisq(aj1.ber.cloglog$deviance,df=aj1.ber.cloglog$df.residual, lower.tail = F),
+                                      pchisq(aj1.bi.cloglog$deviance,df=aj1.bi.cloglog$df.residual, lower.tail = F)),4),
+                     Deviance = c(aj1.ber.logit$deviance,
+                                  aj1.bi.logit$deviance,
+                                  aj1.ber.probit$deviance,
+                                  aj1.bi.probit$deviance,
+                                  aj1.ber.cloglog$deviance,
+                                  aj1.bi.cloglog$deviance),
+                     Null.Deviance =  c(aj1.ber.logit$null.deviance,
+                                  aj1.bi.logit$null.deviance,
+                                  aj1.ber.probit$null.deviance,
+                                  aj1.bi.probit$null.deviance,
+                                  aj1.ber.cloglog$null.deviance,
+                                  aj1.bi.cloglog$null.deviance),
+                     Test.Hosmer.Lemeshow = c(paste(as.character(round(hoslem.test(titanic.t$Survived, fitted(aj1.ber.logit), g=10)$p.value,4)),"**"),
+                                              "",
+                                             paste(as.character(round(hoslem.test(titanic.t$Survived, fitted(aj1.ber.probit), g=10)$p.value,4)),"*"),
+                                              "",
+                                              paste(as.character(round(hoslem.test(titanic.t$Survived, fitted(aj1.ber.cloglog), g=10)$p.value,4)),"**"),
+                                              ""),
+                     Shapiro.test = c("",
+                                               round(shapiro.test(residuals(aj1.bi.logit, type = "deviance"))$p.value,4),
+                                               "",
+                                               round(shapiro.test(residuals(aj1.bi.probit, type = "deviance"))$p.value,4),
+                                               "",
+                                               paste(as.character(round(shapiro.test(residuals(aj1.bi.cloglog, type = "deviance"))$p.value, 4)), "*")),
+                     Tendencia = c("Si",
+                                            "No",
+                                            "Si",
+                                            "No",
+                                            "Si",
+                                            "No"),
+                     Residuos.extremos = c("Si",
+                                           "No",
+                                           "Si",
+                                           "No",
+                                           "Si",
+                                           "No"),
+                     AIC = c(aj1.ber.logit$aic,
+                             aj1.bi.logit$aic,
+                             aj1.ber.probit$aic,
+                             aj1.bi.probit$aic,
+                             aj1.ber.cloglog$aic,
+                             aj1.bi.cloglog$aic))
+t5 <- kable_styling(kbl(tabla5, caption = "Validación modelos propuestos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 6)
+footnote(t5, general="* P.value <=  0.05, ** P.value  <= 0.01. Los residuos extremos implican un valor absoluto mayor a 2 ")
+
+```
+
+```{r, include=FALSE}
+par(mfrow=c(2,2))
+plot(aj1.ber.logit)
+plot(aj1.bi.logit)
+plot(aj1.ber.probit)
+plot(aj1.bi.probit)
+plot(aj1.ber.cloglog)
+plot(aj1.bi.cloglog)
+
+```
+
+Atendiendo a la tabla 4, se descartan la aplicabilidad de los modelos lineales generalizados con distribución Bernoulli (aj1.ber.logit, aj1.ber.probit, aj1.ber.cloglog) pues se rechaza la hipótesis nula de un buen modelo según el test de Hosmer y Lemeshow, además estos poseen residuos extremos y tendencia. Se consideran validos los modelos basados en distribución binomial (aj1.bi.logit, aj1.bi.probit, aj1.bi.cloglog), de estos el único que no cumple de forma estricta las condiciones de aplicabilidad es el aj1.b1.cloglog pues se rechaza la hipótesis de normalidad para los residuos Deviance. 
+
+
+## e) Mejora de los modelos propuestos. 
+
+Se aplicará la función step, con el agrumento direction="backward", sobre los modelos escogidos en el apartado anterior. Cabe destacar que la función step escoge las variables Pclass, Sex y Age.g, así, se ha visto combeniente reagrupar los datos en función de estas variables. Esto tiene como consecuencia directa un aumento del número de individuos presentes en cada grupo. Los datos reagrupados se encuentran en el data.frame titanic.t.g2. A además para cada uno de estos se presenta un modelo con interacciones. La interacción ha sido seleccionado mediante ensayo y error, comparando con la función anova, test="Chi", el modelo sin interacción y el modelo con interacción. Aquellas en las que la interacción es significativa con un nivel de confianza del 5 % se muestran en la tabla 5. 
+
+```{r, include = FALSE}
+logit.ber.step <- step(aj1.bi.logit, direction="backward", trace=0)
+probit.ber.step <- step(aj1.bi.logit, direction="backward", trace=0)
+cloglog.ber.step <- step(aj1.bi.logit, direction="backward",trace=0)
+
+```
+
+
+```{r, include=F}
+age.discrete <- cut(titanic.t$Age, breaks=c(0,40,80))
+fare.discrete <- cut(titanic.t$Fare, breaks=c(0,300,600))
+titanic.t.g2 <- titanic.t[,!(names(titanic.t) == "Age" | names(titanic.t) == "Fare")]
+titanic.t.g2$Age.g <- age.discrete
+titanic.t.g2$Fare.g <- fare.discrete
+titanic.procesing<-as.data.frame.table(with(titanic.t.g2, table(Survived, Pclass, Sex, Age.g)))# Reduce el número de individuos de 712 a 705
+titanic.desing.m3<-aggregate(Freq ~ Pclass +  Sex  + Age.g  , titanic.procesing, sum)
+titanic.desing.m3$Total <- titanic.desing.m3$Freq
+titanic.desing.m3 <- titanic.desing.m3[,-which(names(titanic.desing.m3) == "Freq")]
+titanic.desing.m3$Survived.g <- aggregate(Freq ~ Pclass +  Sex  + Age.g , titanic.procesing[titanic.procesing$Survived == "1",], sum)$Freq
+titanic.desing.m3 <- titanic.desing.m3[!(titanic.desing.m3$Total == 0),]
+titanic.t.g2 <- titanic.desing.m3
+
+```
+
+
+
+```{r, include=FALSE}
+aj2.bi.logit <- glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g, family = binomial(link = "logit"), data=titanic.t.g2)
+aj3.bi.logit <- glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g + Sex:Pclass , family = binomial(link = "logit"), data=titanic.t.g2)
+anova(aj2.bi.logit, aj3.bi.logit, test="Chi")
+
+aj2.bi.probit <- glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g, family = binomial(link = "probit"), data=titanic.t.g2)
+
+aj3.bi.probit <- glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g + Sex:Pclass , family = binomial(link = "probit"), data=titanic.t.g2)
+anova(aj2.bi.probit, aj3.bi.probit, test="Chi")
+
+aj2.bi.cloglog <- glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g, family = binomial(link = "cloglog"), data=titanic.t.g2)
+aj3.bi.cloglog <- glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g + Sex:Pclass, family = binomial(link = "cloglog"), data=titanic.t.g2)
+anova(aj2.bi.cloglog, aj3.bi.cloglog, test="Chi")
+
+
+```
+
+```{r, tabla6, echo=FALSE}
+table6 <- data.frame(Nombre = c("aj2.bi.logit",
+                                "aj3.bi.logit",
+                                "aj2.bi.probit"
+                                ,"aj3.bi.probit",
+                                "aj2.bi.cloglog",
+                                "aj3.bi.cloglog"),
+                     GLM_call = c("glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g, family = binomial(link = \"logit\"), data=titanic.t.g2) †",
+                                  "glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g + Sex:Pclass , family = binomial(link = \"logit\"), data=titanic.t.g2) †",
+                                  " glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g, family = binomial(link = \"probit\"), data=titanic.t.g2) †",
+                                  "glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g + Sex:Pclass , family = binomial(link = \"probit\"), data=titanic.t.g2) †",
+                                  "glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g, family = binomial(link = \"cloglog\"), data=titanic.t.g2) †",
+                                  " glm(cbind(Total, Survived.g) ~ Pclass + Sex + Age.g + Sex:Pclass, family = binomial(link = \"cloglog\"), data=titanic.t.g2) †"))
+t6 <- kable_styling(kbl(table6, caption = "Nuevos modelos propuesto", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+footnote(t6, symbol=c("El data.frame titanic.t contiene las variables: Survived, Pclass, Sex, Age, SibSp, Parch, Fare, Embarked y Title."," De igual forma el data.frame titanic.t.g2 contiene las variables: Survived.g, Total, Pclass, Sex, Age.g, SibSp, Parch, Fare.g, Embarked y Title "))
+```
+
+
+```{r, echo=FALSE}
+tabla7 <- data.frame(Modelo = c("aj2.bi.logit",
+                                "aj3.bi.logit",
+                                "aj2.bi.probit"
+                                ,"aj3.bi.probit",
+                                "aj2.bi.cloglog",
+                                "aj3.bi.cloglog"),
+                     Chi.sq = c(pchisq(aj2.bi.logit$deviance,df=aj2.bi.logit$df.residual, lower.tail = F),
+                                      pchisq(aj3.bi.logit$deviance,df=aj3.bi.logit$df.residual, lower.tail = F),
+                                      pchisq(aj2.bi.probit$deviance,df=aj2.bi.probit$df.residual, lower.tail = F),
+                                      pchisq(aj3.bi.probit$deviance,df=aj3.bi.probit$df.residual, lower.tail = F),
+                                      pchisq(aj2.bi.cloglog$deviance,df=aj2.bi.cloglog$df.residual, lower.tail = F),
+                                      pchisq(aj3.bi.cloglog$deviance,df=aj3.bi.cloglog$df.residual, lower.tail = F)),
+                     Deviance = c(aj2.bi.logit$deviance,
+                                  aj3.bi.logit$deviance,
+                                  aj2.bi.probit$deviance,
+                                  aj3.bi.probit$deviance,
+                                  aj2.bi.cloglog$deviance,
+                                  aj3.bi.cloglog$deviance),
+                     Null.Deviance =  c(aj2.bi.logit$null.deviance,
+                                  aj3.bi.logit$null.deviance,
+                                  aj2.bi.probit$null.deviance,
+                                  aj3.bi.probit$null.deviance,
+                                  aj2.bi.cloglog$null.deviance,
+                                  aj3.bi.cloglog$null.deviance),
+                    
+                     Shapiro.test = c(paste(as.character(round(shapiro.test(residuals(aj2.bi.logit, type = "deviance"))$p.value,6)), ""),
+                                               paste(as.character(round(shapiro.test(residuals(aj3.bi.logit, type = "deviance"))$p.value,6)), ""),
+                                               paste(as.character(round(shapiro.test(residuals(aj2.bi.probit, type = "deviance"))$p.value,6)), ""),
+                                               paste(as.character(round(shapiro.test(residuals(aj3.bi.probit, type = "deviance"))$p.value,6)), ""),
+                                               paste(as.character(round(shapiro.test(residuals(aj2.bi.cloglog, type = "deviance"))$p.value,6)), ""),
+                                               paste(as.character(round(shapiro.test(residuals(aj3.bi.cloglog, type = "deviance"))$p.value, 6)), "")),
+                     Tendencia = c("No",
+                                            "No",
+                                            "No",
+                                            "No",
+                                            "No",
+                                            "No"),
+                     Residuos.extremos = c("No",
+                                           "No",
+                                           "No",
+                                           "No",
+                                           "No",
+                                           "No"),
+                     AIC = c(aj2.bi.logit$aic,
+                             aj3.bi.logit$aic,
+                             aj2.bi.probit$aic,
+                             aj3.bi.probit$aic,
+                             aj2.bi.cloglog$aic,
+                             aj3.bi.cloglog$aic))
+
+t7 <- kable_styling(kbl(tabla7, caption = "Validación modelos propuestos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 6)
+footnote(t7, general="** P.value <=  0.05, **** P.value  <= 0.0001. Los residuos extremos implican un valor absoluto mayor a 2 ")
+```
+
+
+```{r, include = FALSE}
+par(mfrow=c(2,2))
+plot(aj2.bi.logit)
+plot(aj3.bi.logit)
+plot(aj2.bi.probit)
+plot(aj3.bi.probit)
+plot(aj2.bi.cloglog)
+plot(aj3.bi.cloglog)
+```
+
+En base a los resultados mostrados en la tabla 6, todos los modelos propuestos cumplen las condiciones de aplicabilidad. De entre estos el más optimo parece ser el modelo aj3.bi.cloglog pues posee el menor AIC y Deviance. 
+
+## f) Validación cruzada.
+
+
+```{r, include=FALSE}
+aj2.logit.cv <- cv.glm(titanic.t.g2, aj2.bi.logit)
+aj3.logit.cv <- cv.glm(titanic.t.g2, aj3.bi.logit)
+aj2.probit.cv <- cv.glm(titanic.t.g2, aj2.bi.probit)
+aj3.probit.cv <- cv.glm(titanic.t.g2, aj3.bi.probit)
+aj2.cloglog.cv <- cv.glm(titanic.t.g2, aj2.bi.cloglog)
+aj3.cloglog.cv <- cv.glm(titanic.t.g2, aj3.bi.cloglog)
+```
+
+```{r, echo=FALSE}
+tabla8 <- data.frame(Modelo = c("aj2.bi.logit",
+                                "aj3.bi.logit",
+                                "aj2.bi.probit"
+                                ,"aj3.bi.probit",
+                                "aj2.bi.cloglog",
+                                "aj3.bi.cloglog"), 
+                     MSEP = c(aj2.logit.cv$delta[1],
+                              aj3.logit.cv$delta[1],
+                              aj2.probit.cv$delta[1],
+                              aj3.probit.cv$delta[1],
+                              aj2.cloglog.cv$delta[1],
+                              aj3.cloglog.cv$delta[1]),
+                     MSEP.corregido = c(aj2.logit.cv$delta[2],
+                              aj3.logit.cv$delta[2],
+                              aj2.probit.cv$delta[2],
+                              aj3.probit.cv$delta[2],
+                              aj2.cloglog.cv$delta[2],
+                              aj3.cloglog.cv$delta[2]))
+
+kable_styling(kbl(tabla8, caption = "Resultados de validación cruzada mediante Leave-one-Out", digits = 8), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+
+```
+
+Si se observa la tabla número 7 se verá como el modelo, con un menor MSEP es el aj3.bi.cloglog que ya habia sido escogido como modelo optimo en base a su AIC y Devianze así como por respetar las condiciones de aplicabilidad. 
+
+## g) Modelo final e interpretación de los coeficientes.
+
+Así la modelización del dataset titanic::titanic_train da como resultado un modelo lineal generalizado que sigue una distribución binomial, con un link de tipo cloglog $log(-log(1-\pi))$. La figura 3 muestran una serie de plots de los residuos que pueden ser usados para diagnosticar el modelo. Si se observa el panel Residuals vs Fitted se podra apreciar la carencia de una tendencia marcada así como de residuos extremos, valor absoluto mayor a 2. A traves del panel Normal Q-Q podemos garantizar la normalidad de los residuos. Además en el panel Residual vs Leverage se puede apreciar como las observaciones 1 y 3, que se corresponden con las mujeres de primera clase en un rango de edad de los 0 a los 40 años así como las de tercera clase de la misma edad. 
+
+```{r,fig.width=12, fig.height=8, echo=FALSE}
+par(mfrow=c(2,2), oma = c(0,0,5,0))
+plot(aj3.bi.cloglog)
+
+
+mtext("Figura 3: Diagnoístico del modelo escogido", line = 3, side=3, cex = 1, outer=T)
+
+```  
+
+Si atendemos ahora a los coeficientes, estos son:
+
+```{r}
+aj3.bi.cloglog$coefficients
+```
+
+La interpretación de estos radica en que a mayor clase, entiendose el máximo en la primera clase, menor probabilidad de morir. A su vez a mayor edad menor probabilidad  de superviviencia. Tambien es interesante como el hecho de ser hombre aumenta tambien las probabilidades de morir en el Titanic. Si realizamos predicciones esto resulta aun más aparente si se observan las predicciones. 
+
+```{r}
+predict(aj3.bi.cloglog, newdata = data.frame(Pclass="3", Sex="male", Age.g="(40,80]"), type="response")
+predict(aj3.bi.cloglog, newdata = data.frame(Pclass="3", Sex="female", Age.g="(40,80]"), type="response")
+predict(aj3.bi.cloglog, newdata = data.frame(Pclass="1", Sex="male", Age.g="(40,80]"), type="response")
+predict(aj3.bi.cloglog, newdata = data.frame(Pclass="1", Sex="female", Age.g="(40,80]"), type="response")
+```
+
+
+# Modelización banco de datos quejas.dat 
+
+```{r, include = FALSE}
+quejas<- read.table("quejas.dat", header = T)
+cor(quejas$consultas, quejas$horas)
+quejas.fi1 <- quejas[,c("quejas", "residente", "sexo", "ingresos", "horas")]
+quejas.fi1$tiempo.consulta <- quejas.fi1$horas/quejas$consultas
+quejas.fi1$residente <- as.factor(quejas.fi1$residente)
+quejas.fi1$sexo <- as.factor(quejas.fi1$sexo)
+
+quejas.fi2 <- quejas[,c("quejas", "residente", "sexo", "ingresos", "consultas")]
+quejas.fi2$tiempo.consulta <- quejas$horas/quejas.fi2$consultas
+quejas.fi2$residente <- as.factor(quejas.fi2$residente)
+quejas.fi2$sexo <- as.factor(quejas.fi2$sexo)
+```
+
+## a) Identificación de variables y principales características
+
+Se han creado dos datasets quejas.fi1 y quejas.fi2, en cada uno de ellos se ha eliminado la variable consultas y horas respectivamente, sustituyéndose esta por una variable nueva que sera el cociente entre la variable hora y consultas. Esto se ha realizado con el objetivo de minimizar posibles efectos de colinealidad puesto que la variable consultas y horas se encuentran altamente correlacionadas (correlación de Pearson)
+
+```{r, tabla-3, results='asis', echo=F}
+
+tabla1 <- data.frame(Variables = c(names(quejas.fi1), "consultas"),
+                     Tipo = c("Cuantitativa",
+                              "Categórica",
+                              "Categórica",
+                              "Cuantitativa",
+                              "Cuantitativa",
+                              "Cuantitativa", "Cuantitativa"),
+                     Subtipo = c("Discreta",
+                                 "Nominal",
+                                 "Nominal",
+                                 "Continua",
+                                 "continua",
+                                 "Continua", "discreta"),
+                     Rol = c("respuesta",rep("explicativa",6)),
+                     Descripción = c("Quejas que ha recebidio el médico",
+                                     "Si ha sido residente o no en urgencias",
+                                     "sexo del individuo",
+                                     "ingresos del individuo",
+                                     "horas de trabajo realizadas por el médico",
+                                     "media de horas dedicadas a cada consulta", "consultas realizadas por el médico"))
+kable_styling(kbl(tabla1, caption = " Variables usadas en el modelo"), html_font = "Cambria", latex_options = "HOLD_position")
+
+```
+
+
+## b) Análisis descriptivo de los datos
+
+```{r, echo=FALSE}
+tabla2<-psych::describe(cbind(quejas.fi1, consultas=quejas$consultas))
+kable_styling(kbl(tabla2, caption = "Descriptiva numérica de los datos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+```
+
+```{r,fig.width=12, fig.height=8, echo=F}
+par(mfrow=c(2,3), oma=c(0,0,5,0))
+hist(quejas.fi1$quejas)
+hist(quejas.fi1$horas)
+hist(quejas.fi1$ingresos)
+hist(quejas.fi1$tiempo.consulta)
+hist(quejas.fi2$consultas)
+mtext("Figura 4: Histogramas variables cuantitativas", line = 3, side=3, cex = 1, outer=T)
+```  
+
+```{r,fig.width=12, fig.height=8, echo=F}
+par(mfrow=c(2,3), oma = c(0,0,5,0))
+
+boxplot(quejas.fi1$quejas ~ quejas.fi1$residente)
+boxplot(quejas.fi1$quejas ~ quejas.fi1$sexo)
+plot(quejas.fi2$consultas, quejas.fi1$quejas)
+plot(quejas.fi1$ingresos, quejas.fi1$quejas)
+plot(quejas.fi1$horas, quejas.fi1$quejas)
+plot(quejas.fi1$tiempo.consulta, quejas.fi1$quejas)
+
+mtext("Figura 5: Relación entre variables y número de quejas", line = 3, side=3, cex = 1, outer=T)
+
+```
+
+## c) Describe la distribución de probabilidad que se pueda asumir para la variable respuesta ¿Cuál es el parámetro de interés?
+
+Si se asume que la información recogida para cada observación se ha realizado en la misma cantidad de tiempo, se puede asumir que la variable quejas, sigue una distribución Poisson, siendo q cada evento:
+\begin{gather}
+-\:Función\:de\:probabilidad: f(q \mid \lambda) = \frac{e^{\lambda} \lambda^{q}}{q!} \:si\:q=0,1,...\\
+-\:Rango\:del\:parámetro: \lambda > 0 \\
+-\:Media y Varianza: E(quejas) = Var(quejas) = \lambda
+\end{gather}
+
+Se utiliza el logaritmo como link entre el predictor lineal y la variable respuesta.
+
+## d) Modelo lineal generalizado propuesto y validación de este. 
+
+```{r, include=FALSE}
+aj1.poi.log.horas <- glm(quejas ~ ., family = poisson, data = quejas.fi1)
+aj1.poi.log.consultas <- glm(quejas ~ ., family = poisson, data = quejas.fi2)
+aj1.poi.log.original <- glm(quejas ~ ., family = poisson, data=quejas)
+```
+
+```{r, echo=FALSE}
+table4 <- data.frame(Nombre = c("aj1.poi.log.horas", "aj1.poi.log.consultas","aj1.poi.log.original"),
+                     GLM_call = c("glm(quejas ~ ., family = poisson, data = quejas.fi1)",
+                                  "glm(quejas ~ ., family = poisson, data = quejas.fi2)",
+                                  "glm(quejas ~ ., family = poisson, data=quejas)"))
+kable_styling(kbl(table4, caption = "Modelos propuesto", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+
+```
+
+```{r}
+tabla5 <- data.frame(Modelo = c("aj1.poi.log.horas", "aj1.poi.log.consultas","aj1.poi.log.original"),
+                     Chi.sq = round(c(pchisq(aj1.poi.log.horas$deviance,df=aj1.poi.log.horas$df.residual, lower.tail = F),
+                                      pchisq(aj1.poi.log.consultas$deviance,df=aj1.poi.log.consultas$df.residual, lower.tail = F),
+                                      pchisq(aj1.poi.log.original$deviance,df=aj1.poi.log.original$df.residual, lower.tail = F)),4),
+                     Deviance = c(aj1.poi.log.horas$deviance,
+                                  aj1.poi.log.consultas$deviance,
+                                  aj1.poi.log.original$deviance),
+                     Null.Deviance =  c(aj1.poi.log.horas$null.deviance,
+                                  aj1.poi.log.consultas$null.deviance,
+                                  aj1.poi.log.original$null.deviance),
+                     Shapiro.test = c(
+                                               round(shapiro.test(residuals(aj1.poi.log.horas, type = "deviance"))$p.value,4),
+                                               
+                                               round(shapiro.test(residuals(aj1.poi.log.consultas, type = "deviance"))$p.value,4),
+                                               
+                                               paste(as.character(round(shapiro.test(residuals(aj1.poi.log.original, type = "deviance"))$p.value, 4)), "*")),
+                     Tendencia = c("Si",
+                                            "S1",
+                                            "Si"),
+                     Residuos.extremos = c("No",
+                                           "No",
+                                           "No"),
+                     AIC = c(aj1.poi.log.horas$aic,
+                             aj1.poi.log.consultas$aic,
+                             aj1.poi.log.original$aic))
+t5 <- kable_styling(kbl(tabla5, caption = "Validación modelos propuestos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 6)
+footnote(t5, general="* P.value <=  0.05, ** P.value  <= 0.01. Los residuos extremos implican un valor absoluto mayor a 2 ")
+```
+
+```{r}
+par(mfrow=c(2,2))
+plot(aj1.poi.log.horas)
+plot(aj1.poi.log.consultas)
+plot(aj1.poi.log.original)
+```
+

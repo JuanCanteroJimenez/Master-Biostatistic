@@ -27,3 +27,20 @@ plot(AGE,CHD,xlab="Edad")
 counts <- table(titanic.work$Fare, titanic.work$Survived)
 props <- as.vector(counts[,2]/table(titanic.work$Fare))
 plot(1:length(props),props,xlab="Edad codificada")
+
+
+
+
+
+
+
+
+
+
+
+c("aj1.ber.logit",
+  "aj1.bi.logit",
+  "aj1.ber.probit"
+  ,"aj1.bi.probit",
+  "aj1.ber.cloglog",
+  "aj1.bi.cloglog")
