@@ -1,9 +1,9 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.10.6)  27 APR 2022 11:19
+This is pdfTeX, Version 3.14159265-2.6-1.40.20 (TeX Live 2019/Debian) (preloaded format=pdflatex 2021.10.6)  27 APR 2022 11:34
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
-**pruebas.tex
-(./pruebas.tex
+**Practica-1-def.tex
+(./Practica-1-def.tex
 LaTeX2e <2020-02-02> patch level 2
 L3 programming layer <2020-02-14> (/usr/share/texlive/texmf-dist/tex/latex/base
 /article.cls
@@ -477,8 +477,8 @@ Package: makecell 2009/08/03 V0.1e Managing of Tab Column Heads and Cells
 File: l3backend-pdfmode.def 2020-02-03 L3 backend support: PDF mode
 \l__kernel_color_stack_int=\count295
 \l__pdf_internal_box=\box66
-) (./pruebas.aux)
-\openout1 = `pruebas.aux'.
+) (./Practica-1-def.aux)
+\openout1 = `Practica-1-def.aux'.
 
 LaTeX Font Info:    Checking defaults for OML/cmm/m/it on input line 124.
 LaTeX Font Info:    ... okay on input line 124.
@@ -627,12 +627,13 @@ LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <7> on input line 148.
 LaTeX Font Info:    External font `lmex10' loaded for size
 (Font)              <5> on input line 148.
-<pruebas_files/figure-latex/unnamed-chunk-3-1.pdf, id=4, 828.09375pt x 560.0925
-pt>
-File: pruebas_files/figure-latex/unnamed-chunk-3-1.pdf Graphic file (type pdf)
-<use pruebas_files/figure-latex/unnamed-chunk-3-1.pdf>
-Package pdftex.def Info: pruebas_files/figure-latex/unnamed-chunk-3-1.pdf  used
- on input line 211.
+<Practica-1-def_files/figure-latex/unnamed-chunk-3-1.pdf, id=4, 828.09375pt x 5
+60.0925pt>
+File: Practica-1-def_files/figure-latex/unnamed-chunk-3-1.pdf Graphic file (typ
+e pdf)
+<use Practica-1-def_files/figure-latex/unnamed-chunk-3-1.pdf>
+Package pdftex.def Info: Practica-1-def_files/figure-latex/unnamed-chunk-3-1.pd
+f  used on input line 211.
 (pdftex.def)             Requested size: 469.7692pt x 317.73479pt.
 [1
 
@@ -643,23 +644,25 @@ e ignored
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
 l.213 \includegraphics
-                      {pruebas_files/figure-latex/unnamed-chunk-4-1.pdf}pdfTeX 
-warning (ext4): destination with the same identifier (name{table.2}) has been a
-lready used, duplicate ignored
+                      {Practica-1-def_files/figure-latex/unnamed-chunk-4-1.pdf}
+pdfTeX warning (ext4): destination with the same identifier (name{table.2}) has
+ been already used, duplicate ignored
 
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
 l.213 \includegraphics
-                      {pruebas_files/figure-latex/unnamed-chunk-4-1.pdf}]
-<pruebas_files/figure-latex/unnamed-chunk-4-1.pdf, id=23, 840.13875pt x 567.118
-74pt>
-File: pruebas_files/figure-latex/unnamed-chunk-4-1.pdf Graphic file (type pdf)
-<use pruebas_files/figure-latex/unnamed-chunk-4-1.pdf>
-Package pdftex.def Info: pruebas_files/figure-latex/unnamed-chunk-4-1.pdf  used
- on input line 213.
+                      {Practica-1-def_files/figure-latex/unnamed-chunk-4-1.pdf}
+]
+<Practica-1-def_files/figure-latex/unnamed-chunk-4-1.pdf, id=23, 840.13875pt x 
+567.11874pt>
+File: Practica-1-def_files/figure-latex/unnamed-chunk-4-1.pdf Graphic file (typ
+e pdf)
+<use Practica-1-def_files/figure-latex/unnamed-chunk-4-1.pdf>
+Package pdftex.def Info: Practica-1-def_files/figure-latex/unnamed-chunk-4-1.pd
+f  used on input line 213.
 (pdftex.def)             Requested size: 469.7566pt x 317.09973pt.
-[2 <./pruebas_files/figure-latex/unnamed-chunk-3-1.pdf> <./pruebas_files/figure
--latex/unnamed-chunk-4-1.pdf>]
+[2 <./Practica-1-def_files/figure-latex/unnamed-chunk-3-1.pdf> <./Practica-1-de
+f_files/figure-latex/unnamed-chunk-4-1.pdf>]
 
 LaTeX Warning: Command \' invalid in math mode on input line 227.
 
@@ -734,30 +737,30 @@ l.426
                                                   \fi \fi 
 l.426 
       ]
-<pruebas_files/figure-latex/unnamed-chunk-15-1.pdf, id=83, 855.195pt x 554.07pt
->
-File: pruebas_files/figure-latex/unnamed-chunk-15-1.pdf Graphic file (type pdf)
-
-<use pruebas_files/figure-latex/unnamed-chunk-15-1.pdf>
-Package pdftex.def Info: pruebas_files/figure-latex/unnamed-chunk-15-1.pdf  use
-d on input line 427.
+<Practica-1-def_files/figure-latex/unnamed-chunk-15-1.pdf, id=83, 855.195pt x 5
+54.07pt>
+File: Practica-1-def_files/figure-latex/unnamed-chunk-15-1.pdf Graphic file (ty
+pe pdf)
+<use Practica-1-def_files/figure-latex/unnamed-chunk-15-1.pdf>
+Package pdftex.def Info: Practica-1-def_files/figure-latex/unnamed-chunk-15-1.p
+df  used on input line 427.
 (pdftex.def)             Requested size: 469.7454pt x 304.34209pt.
 LaTeX Font Info:    Trying to load font information for T1+lmtt on input line 4
 32.
 (/usr/share/texmf/tex/latex/lm/t1lmtt.fd
 File: t1lmtt.fd 2009/10/30 v1.6 Font defs for Latin Modern
-) [5 <./pruebas_files/figure-latex/unnamed-chunk-15-1.pdf>]
+) [5 <./Practica-1-def_files/figure-latex/unnamed-chunk-15-1.pdf>]
 Overfull \hbox (44.28581pt too wide) in paragraph at lines 545--564
  [][] 
  []
 
-<pruebas_files/figure-latex/unnamed-chunk-20-1.pdf, id=96, 843.15pt x 560.0925p
-t>
-File: pruebas_files/figure-latex/unnamed-chunk-20-1.pdf Graphic file (type pdf)
-
-<use pruebas_files/figure-latex/unnamed-chunk-20-1.pdf>
-Package pdftex.def Info: pruebas_files/figure-latex/unnamed-chunk-20-1.pdf  use
-d on input line 571.
+<Practica-1-def_files/figure-latex/unnamed-chunk-20-1.pdf, id=96, 843.15pt x 56
+0.0925pt>
+File: Practica-1-def_files/figure-latex/unnamed-chunk-20-1.pdf Graphic file (ty
+pe pdf)
+<use Practica-1-def_files/figure-latex/unnamed-chunk-20-1.pdf>
+Package pdftex.def Info: Practica-1-def_files/figure-latex/unnamed-chunk-20-1.p
+df  used on input line 571.
 (pdftex.def)             Requested size: 469.75494pt x 312.0515pt.
 [6pdfTeX warning (ext4): destination with the same identifier (name{table.8}) h
 as been already used, duplicate ignored
@@ -765,21 +768,22 @@ as been already used, duplicate ignored
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
 l.573 \includegraphics
-                      {pruebas_files/figure-latex/unnamed-chunk-21-1.pdf}pdfTeX
- warning (ext4): destination with the same identifier (name{table.9}) has been 
-already used, duplicate ignored
+                      {Practica-1-def_files/figure-latex/unnamed-chunk-21-1....
+pdfTeX warning (ext4): destination with the same identifier (name{table.9}) has
+ been already used, duplicate ignored
 
 \AtBegShi@Output ...ipout \box \AtBeginShipoutBox 
                                                   \fi \fi 
 l.573 \includegraphics
-                      {pruebas_files/figure-latex/unnamed-chunk-21-1.pdf}]
-<pruebas_files/figure-latex/unnamed-chunk-21-1.pdf, id=109, 846.16125pt x 560.0
-925pt>
-File: pruebas_files/figure-latex/unnamed-chunk-21-1.pdf Graphic file (type pdf)
-
-<use pruebas_files/figure-latex/unnamed-chunk-21-1.pdf>
-Package pdftex.def Info: pruebas_files/figure-latex/unnamed-chunk-21-1.pdf  use
-d on input line 573.
+                      {Practica-1-def_files/figure-latex/unnamed-chunk-21-1....
+]
+<Practica-1-def_files/figure-latex/unnamed-chunk-21-1.pdf, id=109, 846.16125pt 
+x 560.0925pt>
+File: Practica-1-def_files/figure-latex/unnamed-chunk-21-1.pdf Graphic file (ty
+pe pdf)
+<use Practica-1-def_files/figure-latex/unnamed-chunk-21-1.pdf>
+Package pdftex.def Info: Practica-1-def_files/figure-latex/unnamed-chunk-21-1.p
+df  used on input line 573.
 (pdftex.def)             Requested size: 469.75417pt x 310.94048pt.
 
 LaTeX Warning: Command \' invalid in math mode on input line 587.
@@ -793,8 +797,8 @@ LaTeX Warning: Command \' invalid in math mode on input line 587.
 
 LaTeX Warning: Command \' invalid in math mode on input line 587.
 
-[7 <./pruebas_files/figure-latex/unnamed-chunk-20-1.pdf> <./pruebas_files/figur
-e-latex/unnamed-chunk-21-1.pdf>]
+[7 <./Practica-1-def_files/figure-latex/unnamed-chunk-20-1.pdf> <./Practica-1-d
+ef_files/figure-latex/unnamed-chunk-21-1.pdf>]
 Overfull \hbox (13.02254pt too wide) in paragraph at lines 662--679
  [][] 
  []
@@ -830,29 +834,29 @@ l.787 \begin{Shaded}
                                                   \fi \fi 
 l.787 \begin{Shaded}
                     ]
-<pruebas_files/figure-latex/unnamed-chunk-35-1.pdf, id=157, 855.195pt x 554.07p
-t>
-File: pruebas_files/figure-latex/unnamed-chunk-35-1.pdf Graphic file (type pdf)
-
-<use pruebas_files/figure-latex/unnamed-chunk-35-1.pdf>
-Package pdftex.def Info: pruebas_files/figure-latex/unnamed-chunk-35-1.pdf  use
-d on input line 820.
+<Practica-1-def_files/figure-latex/unnamed-chunk-35-1.pdf, id=157, 855.195pt x 
+554.07pt>
+File: Practica-1-def_files/figure-latex/unnamed-chunk-35-1.pdf Graphic file (ty
+pe pdf)
+<use Practica-1-def_files/figure-latex/unnamed-chunk-35-1.pdf>
+Package pdftex.def Info: Practica-1-def_files/figure-latex/unnamed-chunk-35-1.p
+df  used on input line 820.
 (pdftex.def)             Requested size: 469.7454pt x 304.34209pt.
 Package atveryend Info: Empty hook `BeforeClearDocument' on input line 822.
-[10 <./pruebas_files/figure-latex/unnamed-chunk-35-1.pdf>]
+[10 <./Practica-1-def_files/figure-latex/unnamed-chunk-35-1.pdf>]
 Package atveryend Info: Empty hook `AfterLastShipout' on input line 822.
-(./pruebas.aux)
+(./Practica-1-def.aux)
 Package atveryend Info: Executing hook `AtVeryEndDocument' on input line 822.
 Package atveryend Info: Empty hook `AtEndAfterFileList' on input line 822.
  ) 
 Here is how much of TeX's memory you used:
  15053 strings out of 481239
- 221108 string characters out of 5920377
- 524060 words of memory out of 5000000
+ 221395 string characters out of 5920377
+ 524074 words of memory out of 5000000
  29895 multiletter control sequences out of 15000+600000
  591611 words of font info for 100 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 41i,13n,42p,1516b,463s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 41i,13n,42p,1523b,463s stack positions out of 5000i,500n,10000p,200000b,80000s
 {/usr/share/texmf/fonts/enc/dvips/lm/lm-ec.enc}{/usr/share/texmf/fonts/enc/dv
 ips/lm/lm-ts1.enc}{/usr/share/texmf/fonts/enc/dvips/lm/lm-mathex.enc}{/usr/shar
 e/texmf/fonts/enc/dvips/lm/lm-mathsy.enc}{/usr/share/texmf/fonts/enc/dvips/lm/l
@@ -866,7 +870,7 @@ texmf/fonts/type1/public/lm/lmr6.pfb></usr/share/texmf/fonts/type1/public/lm/lm
 r7.pfb></usr/share/texmf/fonts/type1/public/lm/lmri7.pfb></usr/share/texmf/font
 s/type1/public/lm/lmsy10.pfb></usr/share/texmf/fonts/type1/public/lm/lmsy7.pfb>
 </usr/share/texmf/fonts/type1/public/lm/lmtt10.pfb>
-Output written on pruebas.pdf (10 pages, 343326 bytes).
+Output written on Practica-1-def.pdf (10 pages, 343405 bytes).
 PDF statistics:
  289 PDF objects out of 1000 (max. 8388607)
  242 compressed objects within 3 object streams

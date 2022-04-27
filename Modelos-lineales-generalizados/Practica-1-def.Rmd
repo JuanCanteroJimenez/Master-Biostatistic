@@ -11,12 +11,15 @@ library(Hmisc)
 library(psych)
 library(ResourceSelection)
 library(boot)
+library(AER)
 ```
 
 
 # Modelización banco de datos titanic::titanic_train
 
 ## a) Identificación de variables y principales características
+
+Es necesario destacar que se han eliminado las variables Ticket, Cabin y Name pues aportan información del individuo que no permite relacionarlos con el resto. Sin embargo, esta última además del nombre contiene información sociocultural sobre este en forma de un titulo honorífico, ej. Dr, Sir etc., que puede ser interesante de cara a la predicción de la mortalidad. Este ha sido extraido de la variable Name haciendo uso de expresiones regulares. Tambien se han retirado las observaciones con datos faltantes
 
 ```{r, message=F, echo = F, warning=F, cat=F, results='hide', include=F}
 #lectura de los datos
@@ -82,7 +85,7 @@ tabla2<-psych::describe(titanic.t)
 kable_styling(kbl(tabla2, caption = "Descriptiva numérica de los datos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
 ```
 
-
+Si se atiende a la figura 2, se podrá apreciar la fuerte relación entre la tasa de mortalidad y el sexo, la clase en la que se viaje, así como del número de esposas y hermanas. 
 
 ```{r,fig.width=12, fig.height=8, echo=F}
 hist.data.frame(titanic.t[,c("Age", "SibSp","Parch","Fare")], mtitl = "Figura 1: Histogramas variables cuantitativas", cex=1)
@@ -124,6 +127,7 @@ barplot(props8,xlab="Puerto de Embarque", ylab="Tasa Supervivencia", name=rownam
 mtext("Figura 2: Relación entre variables explicativas y probabilidad de sobrevivir", outer = TRUE, cex = 1)
 
 ```
+
 
 
 ## c) Describe la distribución de probabilidad que se pueda asumir para la variable respuesta ¿Cuál es el parámetro de interés?
@@ -450,7 +454,7 @@ mtext("Figura 3: Diagnoístico del modelo escogido", line = 3, side=3, cex = 1, 
 
 ```  
 
-Si atendemos ahora a los coeficientes, estos son:
+Si se atiende ahora a los coeficientes, estos son:
 
 ```{r}
 aj3.bi.cloglog$coefficients
@@ -484,7 +488,7 @@ quejas.fi2$sexo <- as.factor(quejas.fi2$sexo)
 
 ## a) Identificación de variables y principales características
 
-Se han creado dos datasets quejas.fi1 y quejas.fi2, en cada uno de ellos se ha eliminado la variable consultas y horas respectivamente, sustituyéndose esta por una variable nueva que sera el cociente entre la variable hora y consultas. Esto se ha realizado con el objetivo de minimizar posibles efectos de colinealidad puesto que la variable consultas y horas se encuentran altamente correlacionadas (correlación de Pearson)
+Se han creado dos datasets quejas.fi1 y quejas.fi2, en cada uno de ellos se ha eliminado la variable consultas y horas respectivamente, sustituyéndose esta por una variable nueva que sera el cociente entre la variable hora y consultas. Esto se ha realizado con el objetivo de minimizar posibles efectos de colinealidad puesto que la variable consultas y horas se encuentran altamente correlacionadas (correlación de Pearson 0.83)
 
 ```{r, tabla-3, results='asis', echo=F}
 
@@ -519,6 +523,8 @@ kable_styling(kbl(tabla1, caption = " Variables usadas en el modelo"), html_font
 tabla2<-psych::describe(cbind(quejas.fi1, consultas=quejas$consultas))
 kable_styling(kbl(tabla2, caption = "Descriptiva numérica de los datos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
 ```
+
+Si se observa la figura 5, se podrá apreciar como existe una fuerte relación entre el número de quejas entre el hecho de que el facultativo sea residente o no, en el número de horas trabajadas, con el número de consultas, así como de la variable tiempo.consulta. 
 
 ```{r,fig.width=12, fig.height=8, echo=F}
 par(mfrow=c(2,3), oma=c(0,0,5,0))
@@ -565,14 +571,15 @@ aj1.poi.log.original <- glm(quejas ~ ., family = poisson, data=quejas)
 
 ```{r, echo=FALSE}
 table4 <- data.frame(Nombre = c("aj1.poi.log.horas", "aj1.poi.log.consultas","aj1.poi.log.original"),
-                     GLM_call = c("glm(quejas ~ ., family = poisson, data = quejas.fi1)",
-                                  "glm(quejas ~ ., family = poisson, data = quejas.fi2)",
-                                  "glm(quejas ~ ., family = poisson, data=quejas)"))
-kable_styling(kbl(table4, caption = "Modelos propuesto", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
-
+                     GLM_call = c("glm(quejas ~ ., family = poisson, data = quejas.fi1) *",
+                                  "glm(quejas ~ ., family = poisson, data = quejas.fi2) †",
+                                  "glm(quejas ~ ., family = poisson, data=quejas) ‡"))
+t4<-kable_styling(kbl(table4, caption = "Modelos propuesto", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+footnote(t4, symbol=c("El data.frame quejas.fi1 contiene las variables: quejas, residente, sexo, ingresos, horas y tiempo.consulta."," De igual forma el data.frame quejas.fi2 contiene las variables: quejas, residente, sexo, ingresos, consultas y tiempo.consulta.",
+                      "Por último el data.frame quejas contiene las variables: quejas, residente, sexo, ingresos, horas y consultas."))
 ```
 
-```{r}
+```{r, echo=FALSE}
 tabla5 <- data.frame(Modelo = c("aj1.poi.log.horas", "aj1.poi.log.consultas","aj1.poi.log.original"),
                      Chi.sq = round(c(pchisq(aj1.poi.log.horas$deviance,df=aj1.poi.log.horas$df.residual, lower.tail = F),
                                       pchisq(aj1.poi.log.consultas$deviance,df=aj1.poi.log.consultas$df.residual, lower.tail = F),
@@ -583,12 +590,11 @@ tabla5 <- data.frame(Modelo = c("aj1.poi.log.horas", "aj1.poi.log.consultas","aj
                      Null.Deviance =  c(aj1.poi.log.horas$null.deviance,
                                   aj1.poi.log.consultas$null.deviance,
                                   aj1.poi.log.original$null.deviance),
-                     Shapiro.test = c(
-                                               round(shapiro.test(residuals(aj1.poi.log.horas, type = "deviance"))$p.value,4),
-                                               
-                                               round(shapiro.test(residuals(aj1.poi.log.consultas, type = "deviance"))$p.value,4),
-                                               
-                                               paste(as.character(round(shapiro.test(residuals(aj1.poi.log.original, type = "deviance"))$p.value, 4)), "*")),
+                     Shapiro.test = c(paste(as.character(round(shapiro.test(residuals(aj1.poi.log.horas, type = "deviance"))$p.value, 4)),
+                                            "*"),
+                     paste(as.character(round(shapiro.test(residuals(aj1.poi.log.consultas, type = "deviance"))$p.value, 4)),
+                           "*"),
+paste(as.character(round(shapiro.test(residuals(aj1.poi.log.original, type = "deviance"))$p.value, 4)), "")),
                      Tendencia = c("Si",
                                             "S1",
                                             "Si"),
@@ -597,15 +603,206 @@ tabla5 <- data.frame(Modelo = c("aj1.poi.log.horas", "aj1.poi.log.consultas","aj
                                            "No"),
                      AIC = c(aj1.poi.log.horas$aic,
                              aj1.poi.log.consultas$aic,
-                             aj1.poi.log.original$aic))
+                             aj1.poi.log.original$aic),
+Dispersion.test=c(dispersiontest(aj1.poi.log.horas)$p.value,
+                  dispersiontest(aj1.poi.log.consultas)$p.value,
+                  dispersiontest(aj1.poi.log.original)$p.value))
 t5 <- kable_styling(kbl(tabla5, caption = "Validación modelos propuestos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 6)
 footnote(t5, general="* P.value <=  0.05, ** P.value  <= 0.01. Los residuos extremos implican un valor absoluto mayor a 2 ")
 ```
 
-```{r}
+```{r, include = FALSE}
 par(mfrow=c(2,2))
 plot(aj1.poi.log.horas)
 plot(aj1.poi.log.consultas)
 plot(aj1.poi.log.original)
 ```
 
+Atendiendo a la Tabla 11, se ve como los modelos aj1.poi.log.horas y aj1.poi.log.consultas poseen residuos en los que se encuentra evidencia como para descartar la hipótesis nula de normalidad en estos. El único que cumple los requisitos de aplicabilidad, aj1.poi.log.original, es además el mejor modelo en términos de AIC y Deviance. 
+
+## e) Mejora de los modelos propuestos
+
+Partiendo de los modelos completos mostrados en la tabla 10, se aplicará la función step con el algoritmo backward, con el objetivo de encontrar el mejor modelo según esta metodología. Además sobre los modelos resultantes, que son denotados como aj2.poi.***, con la ayuda de la función anova, con test="Chi", se han introducido interacciones así como transformaciones de las variables. Los resultados se muestran en la tabla 12 y su validación en la tabla 13. Es necesario destacar que el modelo ofrecido por la función step sobre aj1.poi.log.consultas y aj1.poi.log.original es el mismo. Así se elimina la "rama" original. 
+
+```{r, include = FALSE}
+poi.horas.step <- step(aj1.poi.log.horas, trace=0)
+poi.consultas.step <- step(aj1.poi.log.consultas, trace=0)
+poi.original.step <- step(aj1.poi.log.original, trace=0)
+
+```
+
+```{r, include = FALSE}
+aj2.poi.horas <- glm(quejas ~ residente  + horas + tiempo.consulta, poisson, quejas.fi1)
+aj3.poi.horas <- glm(quejas ~ residente  + horas + tiempo.consulta + horas:tiempo.consulta, poisson, quejas.fi1)
+aj4.poi.horas <- glm(quejas ~ residente + horas + tiempo.consulta + horas:tiempo.consulta + horas:residente , poisson, quejas.fi1)
+aj5.poi.horas <- glm(quejas ~ residente + horas + tiempo.consulta + horas:tiempo.consulta + horas:residente , poisson, quejas.fi1)
+anova(aj2.poi.horas, aj3.poi.horas, aj4.poi.horas, aj5.poi.horas, test="Chi")
+aj2.poi.consultas <- glm(quejas ~ residente + consultas, poisson, quejas.fi2 )
+aj3.poi.consultas <- glm(quejas ~ residente * consultas, poisson, quejas.fi2)
+aj4.poi.consultas <- glm(quejas ~ residente * log(consultas), poisson, quejas.fi2)
+
+anova(aj2.poi.consultas, aj3.poi.consultas, aj4.poi.consultas, test="Chi")
+```
+
+```{r, echo=FALSE}
+table4 <- data.frame(Nombre = c("aj2.poi.horas",
+                                "aj3.poi.horas",
+                                "aj4.poi.horas",
+                                "aj2.poi.consultas",
+                                "aj3.poi.consultas",
+                                "aj4.poi.consultas"),
+                     GLM_call = c("glm(quejas ~ residente  + horas + tiempo.consulta, poisson, quejas.fi1)",
+                                  "glm(quejas ~ residente  + horas + tiempo.consulta + horas:tiempo.consulta, poisson, quejas.fi1)",
+                                  "glm(quejas ~ residente + horas + tiempo.consulta + horas:tiempo.consulta + horas:residente , poisson, quejas.fi1)",
+                                  "glm(quejas ~ residente + consultas, poisson, quejas.fi2 )",
+                                  "glm(quejas ~ residente * consultas, poisson, quejas.fi2)",
+                                  "glm(quejas ~ residente * log(consultas), poisson, quejas.fi2)"))
+kable_styling(kbl(table4, caption = "Modelos propuesto", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+```
+
+
+```{r, echo=FALSE}
+tabla5 <- data.frame(Modelo = c("aj2.poi.horas",
+                                "aj3.poi.horas",
+                                "aj4.poi.horas",
+                                "aj2.poi.consultas",
+                                "aj3.poi.consultas",
+                                "aj4.poi.consultas"),
+                     Chi.sq = round(c(pchisq(aj2.poi.horas$deviance,df=aj2.poi.horas$df.residual, lower.tail = F),
+                                      pchisq(aj3.poi.horas$deviance,df=aj3.poi.horas$df.residual, lower.tail = F),
+                                      pchisq(aj4.poi.horas$deviance,df=aj4.poi.horas$df.residual, lower.tail = F),
+                                      pchisq(aj2.poi.consultas$deviance,df=aj2.poi.consultas$df.residual, lower.tail = F),
+                                      pchisq(aj3.poi.consultas$deviance,df=aj3.poi.consultas$df.residual, lower.tail = F),
+                                      pchisq(aj4.poi.consultas$deviance,df=aj4.poi.consultas$df.residual, lower.tail = F)),4),
+                     Deviance = c(aj2.poi.horas$deviance,
+                                  aj3.poi.horas$deviance,
+                                  aj4.poi.horas$deviance,
+                                  aj2.poi.consultas$deviance,
+                                  aj3.poi.consultas$deviance,
+                                  aj4.poi.consultas$deviance),
+                     Null.Deviance =  c(aj2.poi.horas$null.deviance,
+                                  aj3.poi.horas$null.deviance,
+                                  aj4.poi.horas$null.deviance,
+                                  aj2.poi.consultas$null.deviance,
+                                  aj3.poi.consultas$null.deviance,
+                                  aj4.poi.consultas$null.deviance),
+                     Shapiro.test = c(paste(as.character(round(shapiro.test(residuals(aj2.poi.horas, type = "deviance"))$p.value, 4)),
+                                            ""),
+                     paste(as.character(round(shapiro.test(residuals(aj3.poi.horas, type = "deviance"))$p.value, 4)),
+                           ""),
+paste(as.character(round(shapiro.test(residuals(aj4.poi.horas, type = "deviance"))$p.value, 4)), ""),
+paste(as.character(round(shapiro.test(residuals(aj2.poi.consultas, type = "deviance"))$p.value, 4)), ""),
+paste(as.character(round(shapiro.test(residuals(aj3.poi.consultas, type = "deviance"))$p.value, 4)), ""),
+paste(as.character(round(shapiro.test(residuals(aj4.poi.consultas, type = "deviance"))$p.value, 4)), "")),
+                     Tendencia = c("Si",
+                                            "No",
+                                            "No",
+                                   "No",
+                                   "No",
+                                   "No"),
+                     Residuos.extremos = c("No",
+                                           "No",
+                                           "No",
+                                           "No",
+                                           "No",
+                                           "Si"),
+                     AIC = c(aj2.poi.horas$aic,
+                             aj3.poi.horas$aic,
+                            aj4.poi.horas$aic,
+                             aj2.poi.consultas$aic,
+                             aj3.poi.consultas$aic,
+                             aj4.poi.consultas$aic),
+Dispersion.test=c(dispersiontest(aj2.poi.horas)$p.value,
+                  dispersiontest(aj3.poi.horas)$p.value,
+                  dispersiontest(aj4.poi.horas)$p.value,
+                  dispersiontest(aj2.poi.consultas)$p.value,
+                  dispersiontest(aj3.poi.consultas)$p.value,
+                  dispersiontest(aj4.poi.consultas)$p.value))
+t5 <- kable_styling(kbl(tabla5, caption = "Validación modelos propuestos", digits = 2), html_font = "Cambria", latex_options = "HOLD_position", font_size = 6)
+footnote(t5, general="* P.value <=  0.05, ** P.value  <= 0.01. Los residuos extremos implican un valor absoluto mayor a 2 ")
+```
+
+
+```{r, include=FALSE}
+par(mfrow=c(2,2))
+plot(aj2.poi.horas)
+plot(aj3.poi.horas)
+plot(aj4.poi.horas)
+plot(aj2.poi.consultas)
+plot(aj3.poi.consultas)
+plot(aj4.poi.consultas)
+
+```
+
+A excepción de aj2.poi.horas y aj4.poi.consultas todos los modelos mostrados en la tabla 13 cumplen las condiciones de aplicabilidad. En términos de AIC y Deviance el mejor modelo es aj4.poi.horas. 
+
+## f) Validación cruzada. 
+
+```{r, include = FALSE}
+aj2.poi.cv.horas <- cv.glm(quejas.fi1, aj2.poi.horas)
+aj3.poi.cv.horas <- cv.glm(quejas.fi1, aj3.poi.horas)
+aj4.poi.cv.horas <- cv.glm(quejas.fi1, aj4.poi.horas)
+aj2.poi.cv.consultas <- cv.glm(quejas.fi2, aj2.poi.consultas)
+aj3.poi.cv.consultas <- cv.glm(quejas.fi2, aj3.poi.consultas)
+aj4.poi.cv.consultas <- cv.glm(quejas.fi2, aj4.poi.consultas)
+
+```
+
+
+```{r, echo=FALSE}
+tabla8 <- data.frame(Modelo = c("aj2.poi.horas",
+                                "aj3.poi.horas",
+                                "aj4.poi.horas",
+                                "aj2.poi.consultas",
+                                "aj3.poi.consultas",
+                                "aj4.poi.consultas"), 
+                     MSEP = c(aj2.poi.cv.horas$delta[1],
+                              aj3.poi.cv.horas$delta[1],
+                              aj4.poi.cv.horas$delta[1],
+                              aj2.poi.cv.consultas$delta[1],
+                              aj3.poi.cv.consultas$delta[1],
+                              aj4.poi.cv.consultas$delta[1]),
+                     MSEP.corregido = c(aj2.poi.cv.horas$delta[2],
+                              aj3.poi.cv.horas$delta[2],
+                              aj4.poi.cv.horas$delta[2],
+                              aj2.poi.cv.consultas$delta[2],
+                              aj3.poi.cv.consultas$delta[2],
+                              aj4.poi.cv.consultas$delta[2]))
+
+kable_styling(kbl(tabla8, caption = "Resultados de validación cruzada mediante Leave-one-Out", digits = 8), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+
+```
+
+Si se presta atención a la tabla 14, se podrá ver como el mejor modelo en términos de su calidad predictiva, evaluada mediante Leav-one-Out, es el aj2.poi.consultas. Resulta relevante la observación de que el mejor modelo en términos de calidad de ajuste, aj4.poi.horas es el peor en términos de calidad predictiva, seguramente debido a sobreajuste. 
+
+## g) Modelo final e interpretación de los coeficientes.
+
+
+Así la modelización del dataset quejas.dat da como resultado un modelo lineal generalizado que sigue una distribución Poisson, con link logarítmico, el modelo aj2.poi.consultas. La figura 6 muestra una serie de plots de los residuos que pueden ser usados para diagnosticar el modelo. Si se observa el panel Residuals vs Fitted se podrá apreciar la carencia de una tendencia marcada así como de residuos extremos, valor absoluto mayor a 2. A traves del panel Nomral Q-Q podemos garantizar la normalidad de los residuos. Por último en el panel Residual vs Leverage no se pueden identificar observaciones que posean una gran influencia sobre el modelo atendiendo al criterio de la distancia de Cook. 
+
+
+
+Si se presta atención a los coeficientes, estos son:
+
+```{r, echo=FALSE}
+aj2.poi.consultas$coefficients
+```
+
+Así el hecho de ser residente disminuye en exp(-0.3121) unidades el número de quejas recibidas por el facultativo, además el aumento en una consulta aumenta el número de quejas recibidas por el médico en exp(0.0008101). Estos resultados son lógicos pues la resistencia implica más experiencia y es razonable asumir que un médico con mayor experiencia será capaz de lidiar mejor con los pacientes. Si atendemos al coeficiente de consultas también resulta necesario pues a mayor consultas mas cansanció y mayor probabilidad de dar un mal serivicio al paciente. Esto resulta evidente si realizamos predicciones:
+
+```{r}
+predict(aj2.poi.consultas, newdata = data.frame(residente="si", consultas=1700), type="response")
+predict(aj2.poi.consultas, newdata = data.frame(residente="no", consultas=1700), type="response")
+predict(aj2.poi.consultas, newdata = data.frame(residente="si", consultas=3000), type="response")
+predict(aj2.poi.consultas, newdata = data.frame(residente="no", consultas=3000), type="response")
+```
+
+
+```{r,fig.width=12, fig.height=8, echo=FALSE}
+par(mfrow=c(2,2), oma = c(0,0,5,0))
+plot(aj2.poi.consultas)
+
+
+mtext("Figura 6: Diagnoístico del modelo escogido", line = 3, side=3, cex = 1, outer=T)
+
+```  
