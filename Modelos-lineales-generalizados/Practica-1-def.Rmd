@@ -806,3 +806,9 @@ plot(aj2.poi.consultas)
 mtext("Figura 6: Diagnoístico del modelo escogido", line = 3, side=3, cex = 1, outer=T)
 
 ```  
+
+
+
+# Información adicional
+
+El código fuente Practica-1-def.Rmd puede ser consultado en [GitHub](https://github.com/JuanCanteroJimenez/Master-Biostatistic/blob/main/Modelos-lineales-generalizados/Practica-1-def.Rmd)   (https://github.com/JuanCanteroJimenez/Master-Biostatistic/blob/main/Modelos-lineales-generalizados/Practica-1-def.Rmd) 
