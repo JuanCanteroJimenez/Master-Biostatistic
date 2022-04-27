@@ -443,7 +443,14 @@ Si se observa la tabla número 7 se verá como el modelo, con un menor MSEP es e
 
 ## g) Modelo final e interpretación de los coeficientes.
 
-Así la modelización del dataset titanic::titanic_train da como resultado un modelo lineal generalizado que sigue una distribución binomial, con un link de tipo cloglog $log(-log(1-\pi))$. La figura 3 muestran una serie de plots de los residuos que pueden ser usados para diagnosticar el modelo. Si se observa el panel Residuals vs Fitted se podra apreciar la carencia de una tendencia marcada así como de residuos extremos, valor absoluto mayor a 2. A traves del panel Normal Q-Q podemos garantizar la normalidad de los residuos. Además en el panel Residual vs Leverage se puede apreciar como las observaciones 1 y 3, que se corresponden con las mujeres de primera clase en un rango de edad de los 0 a los 40 años así como las de tercera clase de la misma edad. 
+Así la modelización del dataset titanic::titanic_train da como resultado un modelo lineal generalizado que sigue una distribución binomial, con un link de tipo cloglog $log(-log(1-\pi))$, de forma general:
+
+\begin{gather}
+Survived.g_{i} \sim Bi(\pi_{i}, n_{i})\\
+\pi_{i} = 1-exp(exp(\beta_{0} + \beta_{1}x_{1} + ... + \beta_{j}x_{j}))
+\end{gather}
+
+La figura 3 muestran una serie de plots de los residuos que pueden ser usados para diagnosticar el modelo. Si se observa el panel Residuals vs Fitted se podra apreciar la carencia de una tendencia marcada así como de residuos extremos, valor absoluto mayor a 2. A traves del panel Normal Q-Q podemos garantizar la normalidad de los residuos. Además en el panel Residual vs Leverage se puede apreciar como las observaciones 1 y 3, que se corresponden con las mujeres de primera clase en un rango de edad de los 0 a los 40 años así como las de tercera clase de la misma edad. 
 
 ```{r,fig.width=12, fig.height=8, echo=FALSE}
 par(mfrow=c(2,2), oma = c(0,0,5,0))
@@ -778,7 +785,12 @@ Si se presta atención a la tabla 14, se podrá ver como el mejor modelo en tér
 ## g) Modelo final e interpretación de los coeficientes.
 
 
-Así la modelización del dataset quejas.dat da como resultado un modelo lineal generalizado que sigue una distribución Poisson, con link logarítmico, el modelo aj2.poi.consultas. La figura 6 muestra una serie de plots de los residuos que pueden ser usados para diagnosticar el modelo. Si se observa el panel Residuals vs Fitted se podrá apreciar la carencia de una tendencia marcada así como de residuos extremos, valor absoluto mayor a 2. A traves del panel Nomral Q-Q podemos garantizar la normalidad de los residuos. Por último en el panel Residual vs Leverage no se pueden identificar observaciones que posean una gran influencia sobre el modelo atendiendo al criterio de la distancia de Cook. 
+Así la modelización del dataset quejas.dat da como resultado un modelo lineal generalizado que sigue una distribución Poisson, con link logarítmico, el modelo aj2.poi.consultas. De forma general este modelo toma la forma:
+\begin{gather}
+Quejas_{i} \sim Po(\lambda_{i})\\
+\lambda_{i} = exp(\beta_{0} + \beta_{1}x_{1} + ... + \beta_{j}x_{j})
+\end{gather}
+. La figura 6 muestra una serie de plots de los residuos que pueden ser usados para diagnosticar el modelo. Si se observa el panel Residuals vs Fitted se podrá apreciar la carencia de una tendencia marcada así como de residuos extremos, valor absoluto mayor a 2. A traves del panel Nomral Q-Q podemos garantizar la normalidad de los residuos. Por último en el panel Residual vs Leverage no se pueden identificar observaciones que posean una gran influencia sobre el modelo atendiendo al criterio de la distancia de Cook. 
 
 
 
