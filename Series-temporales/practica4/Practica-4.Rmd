@@ -1,0 +1,301 @@
+---
+title: "Práctica 4"
+author: "Juan Cantero Jimenez"
+date: "4/29/2022"
+output: pdf_document
+---
+
+# 1. Introducción
+
+En este trabajo se aplicará la metodología de Box y Jenkins al conjunto de datos AustriaT, agrupado de forma anual, que contiene los datos de las exportaciones totales en millones de euros de Austria hacia la unión europea en el periodo que transcurre desde 1999 hasta 2020 de forma mensual obtenidos de la oficina estadística de la Unión Europea (Eurostat).
+
+```{r, echo = FALSE, message=FALSE}
+library(forecast)
+library(ggplot2)
+library(aod)
+library(kableExtra)
+
+AustriaT <- read.csv2("AustriaT.csv")
+AustriaT <- ts(AustriaT, start = c(1999, 1), frequency = 12)
+AustriaTanual <- aggregate(AustriaT, FUN = sum)
+```
+
+# 2. Indefiticación del modelo ARIMA
+
+Se partirá de los resultados expuestos en la práctica 3, en los cuales se identífica las transformaciones necesarias de AustriaT agrupada anualmente, AustriaTanual, para que sea estacionaria y ergódica. Este proceso arroja que la serie AustriaTanual requiere de una diferenciación para cumplir las condiciones anteriores. La Figura 1 muestra la serie AustriaTanual así como su función de autocorrelación, FAC, y la diferenciación de esta junto con su FAC. 
+
+```{r, fig.height=4, fig.width=12, warning=FALSE}
+gridExtra::grid.arrange(
+autoplot(AustriaTanual, xlab = "", ylab = "", main = "Figura 1: Exportaciones Austria (millones euros)"),
+autoplot(diff(AustriaTanual), xlab = "", ylab = "", main = ""),
+ggAcf(AustriaTanual, xlab = "", ylab = "FAC", main = ""),
+ggAcf(diff(AustriaTanual), xlab = "", ylab = "FAC", main = ""),
+nrow=2
+)
+```   
+
+
+Si se atiende a la figura 1 se verá como para la función diferenciada, panel superior derecha, la serie es estacionaria. Si se atiende a su FAC, panel inferior derecho, no existe ninguna autocorrelación por encima del intervalo de confianza 95 % de la distribución de estos. Puesto que la interpretación de la FAC puede ser inexacta y requiere de experiencia, se utilizará la función autoarima para determinar el modelo ARIMA más optimo según esta función.
+
+```{r}
+auto.arima(AustriaTanual)
+```
+
+El modelo más optimo según la función auto.arima es ARIMA(0,1,0) con deriva. Esto es razonable puesto que si atendemos a la Figura 1 panel inferior derecha, se podrá observar como ninguna autocorrelación es superior al intervalo de confianza, lo que suele indicar ruido blanco lo que se corresponde con el modelo mencionado. Notesé como la función auto.arima indica una diferenciación, algo que ya habia sido identíficado en la práctica anterior. 
+
+```{r, fig.height=3, fig.width=12}
+arima010 <- Arima(AustriaTanual, 
+                  order = c(0, 1, 0))
+
+error <- residuals(arima010)
+sderror <- sd(error)
+
+autoplot(error, series="Error",
+         colour = "black",
+         xlab = "",
+         ylab = "Error",
+         main = "Figura 2. Error + Intervención") +
+  geom_hline(yintercept = c(-3, -2, 2, 3)*sderror, 
+             colour = c("red", "green", "green", "red"), 
+             lty = 2) + 
+  geom_point() +
+  scale_x_continuous(breaks= seq(1960, 2014, 4)) 
+
+time(error)[abs(error) > 2.5*sderror]
+```
+
+Si se analizan ahora los residuos, se verá como el año 2009 presenta un error atípico, mas 2.5 veces la desviación típíca. Así será necesario codificar esta intervención mediante una nueva variable ficticia, y probar denuevo con la función auto.arima que ahora será capaz de detectar la intervención gracias a esta. 
+
+```{r}
+d2009 <- 1*(time(error) == 2009)
+auto.arima(AustriaTanual, xreg = d2009)
+
+```
+
+Si se observa el resultado de auto.arima con la intervención se verá como tanto el término drift como la intervención son significativas, atendiendo al bago criterio de que el coeficiente sea superior a dos veces el error estandar. Tomaremos este modelo como definitivo. 
+
+
+# 3. Estimación del modelo definitivo
+
+Los coeficientes del modelo pueden ser obtenidos con la función Arima.
+
+```{r}
+arima010 <- Arima(AustriaTanual,
+                  order = c(0,1,0),
+                  xreg=d2009,
+                  include.drift = T)
+arima010
+```
+Además se puede comprobar si las variables son significativas de una forma más exhaustiva mediantes el test de Wald. 
+
+```{r}
+ancho <- max(nchar(names(coef(arima010)))) + 2
+for(i in 1:length(coef(arima010))) {
+  wt <- wald.test(b = coef(arima010), 
+                  Sigma = vcov(arima010), 
+                  Terms = i)
+  cat("\nCoeficiente: ", format(names(coef(arima010))[i], width = ancho), "valor de p: ", 
+      formatC(wt$result$chi2[3], digits = 4, format = "f"))
+}
+```
+
+Se puede observar como tanto el término de deriva como la intervención (xreg) son significativos. 
+
+Así el modelo obtenido haciendo uso de la función auto.arima es:
+
+\begin{gather}
+AustriaTanual_{t} \sim ARIMA(0,1,0) + d2009 \\
+AustriaTanual_{t} = c + AustriaTanual_{t-1} + \epsilon_{t} + \gamma_{1}*d2009\\
+c = 2697.504\:millones\:de\:euros,\:\gamma_{1} = -14706\: millones\: de\: euros\:
+\end{gather}
+
+Cada año las exportaciones de Austria  a la Unión Europea son iguales a lo exportado al año anterior más 2697.504 millones de euros. Esto índica que el volumen de las exportaciones de Austria aumentan a un ritmo constante de 2697.507 millones/año. El año 2009 se exportarón 14706.909 millones de euros menos, sintoma de la crisis bursatil de 2008.
+
+# 4. Validación del modelo.
+
+La validación del modelo propuesto anteriormente pasa por la comprobación de que su residuo sea ruido blanco, dicho de otra forma esto implica que la media sea cero $E[\epsilon_{t}] = 0$, la varianza sea constante (homocedásticidad) $E[\epsilon^{2}_{t}] = \sigma^{2}$, sea incorrelado $E[\epsilon_{t} * \epsilon_{s}] = 0\: t \neq s$ y que siga una distribución normal $\epsilon_{t} \sim N$.
+
+## 4.1 Media cero.
+
+No existe ninguna forma adecuada de contrastar que la media sea cero. Sin embargo, se puede atender al error medio que es 1.93, bastante bajo si se compara con el valor medio de la serie. El error porcentual medio es del 3.57 % tambien bajo. Esto sugiere que la media de los residuos sea cercana a cero.  
+
+```{r}
+accuracy(arima010)
+```
+
+## 4.2 Incorrelación
+
+La hipotesis nula de incorrelación puede ser contrastada mediante el test de Box-Ljung
+
+```{r}
+error <- residuals(arima010)
+Box.test(error, lag = 2,type = "Ljung-Box")
+```
+Puesto que el valor de p es mayor que el nivel de significación 0.05 no se rechaza la hipótesis nula de incorrelación. La elección del parámetro argumento lag, que indica el número de retardos en la prueba, es arbitraria y conviene probar con distintos valores de esta. El resultado para el test de Box-Ljung con distintos retardos se muestra en la tabla 1. Si se observa esta, se verá que no se descarta la hipótesis de incorrelación para los distintos valores de lag. 
+
+```{r, echo = FALSE}
+max_lag = 9
+tabla1 <- data.frame(Lag = 1:max_lag, valor.de.p = sapply(1:max_lag, function(x) Box.test(error, lag=x, type="Ljung-Box")$p.value))
+
+kable_styling(kbl(t(tabla1), caption = "Hipotesis de incorrelación bajo distintos valores de lag"), html_font = "Cambria", latex_options = "HOLD_position")
+
+```
+
+## 4.3  Homocedasticidad (varianza constante).
+
+La hipótesis de homocedasticidad de los residuos puede ser comprobada mediante el test de Box-Ljung sobre los residuos al cuadrado. 
+
+```{r}
+Box.test(error^2, lag = 2, type = "Ljung-Box")
+```
+
+Dado que el valor de p es 0.99 superior al nivel de significatividad 0.05 no se rechaza la hipótesis nula de homocedasticidad. De nuevo este test sufre de la arbitrariedad en la selección del parámetro lag. En la tabla 2 se muestran los resultados del mismo test para distintos valores de lag. Se puede observar que la hipótesis nula no se descarta para los distintos valores ensayados. 
+
+
+```{r, echo = FALSE}
+max_lag = 9
+tabla1 <- data.frame(Lag = 1:max_lag, valor.de.p = sapply(1:max_lag, function(x) Box.test(error^2, lag=x, type="Ljung-Box")$p.value))
+
+kable_styling(kbl(t(tabla1), caption = "Hipotesis homocedasticidad bajo distintos valores de lag"), html_font = "Cambria", latex_options = "HOLD_position")
+
+```
+
+## 4.4 Normalidad.
+
+La hipótesis nula de normalidad puede ser contrastada mediante un test de Shapiro-Wilk entre otros. 
+
+```{r}
+shapiro.test(error)
+```
+
+No se descarta la hipótesis nula de normalidad de los residuos para un nivel de significatividad del 0.05. 
+
+## 4.5 Intervención.
+
+Por último, serán necesario comprobar que no existen errores atípicos, entendiendo a estos como residuos que sean mayores que dos desviaciones típicas del error. 
+
+```{r, fig.height=3, fig.width=12}
+sderror <- sd(error)
+
+autoplot(error, series="Error",
+         colour = "black",
+         xlab = "",
+         ylab = "Error",
+         main = "Figura 3. Error + Intervención") +
+  geom_hline(yintercept = c(-3, -2.5, 2.5, 3)*sderror, 
+             colour = c("red", "green", "green", "red"), 
+             lty = 2) + 
+  geom_point() +
+  scale_x_continuous(breaks= seq(1999, 2020, 2)) 
+```
+
+A destacar el residuo del año 2020 que aunque no supera el criterio fijado para ser considerado atípico, se encuntra próximo. Este error relativamente atípico comparado con el resto puede ser consecuencia de la Pandemia de Sars-Cov-2 que comenzo en dicho año. 
+
+## 5 Previsión de la serie y evaluación de esta. 
+
+```{r}
+parima010 <- forecast(arima010, h = 3, level = 95, xreg=rep(0, 3))
+parima010
+```
+```{r, fig.height=3, fig.width=12}
+autoplot(parima010, 
+         xlab = "", 
+         ylab = "Títulos",
+         main = "Figure 4. AustriaTanual (1999-2020) y predicción (2021-2023)") +
+  scale_x_continuous(breaks= seq(1993, 2023, 2)) 
+```
+
+Si se observa la figura 4, se verá como la predicción crece de forma constante. Esto tiene sentido si se atiende a la ecuación número 2 que describe el modelo, la cual indica que cada año tiene un valor igual al año anterior más 2697.504 millones de euros. 
+
+## 5.1 Validación de la predicción con origen de predicción móvil. 
+
+A continuación se evaluarán las predicciónes mediante origen de predicción móvil, se asume que se precisa de 10 años para estimar el modelo, y se fijara el horizonte temporal en 5 años. A estos valores se les calcula el MAPE, que para la predicción intra muestral era de 3.57 %. 
+
+```{r}
+k <- 10                  
+h <- 5                    
+T <- length(AustriaTanual)     
+s <- T - k - h    
+mapeArima <- matrix(NA, s + 1, h)
+X <- data.frame(cbind(d2009))
+for (i in 0:s) {
+  train.set <- subset(AustriaTanual, start = i + 1, end = i + k)
+  test.set <-  subset(AustriaTanual, start = i + k + 1, end = i + k + h) 
+  X.train <- data.frame(X[(i + 1):(i + k),])
+  hay <- colSums(X.train)
+  X.train <- X.train[, hay>0]
+  X.test <- data.frame(X[(i + k + 1):(i + k + h),])
+  X.test <- X.test[, hay>0]
+  if (length(X.train) > 0) {
+    fit <- try(Arima(train.set, 
+                     order = c(0, 1, 0),
+                     include.drift = T,
+                     xreg=as.matrix(X.train)))
+  } else {
+    fit <- try(Arima(train.set, 
+                     order = c(2, 1, 0)))
+  }
+  if (!is.element("try-error", class(fit))) {
+    if (length(X.train) > 0) 
+      fcast <- forecast(fit, h = h, xreg = as.matrix(X.test)) else
+        fcast <- forecast(fit, h = h)
+      mapeArima[i + 1,] <- 100*abs(test.set - fcast$mean)/test.set
+  }
+}
+mapeArima <- colMeans(mapeArima, na.rm = TRUE)
+mapeArima
+```
+
+De forma general el MAPE extra muestral es de 2 a 3 veces superior al MAPE intramuestral. Como es de esperar, este aumenta conforme nos alejamos en el horizonte de previsión. Sin embargo, el MAPE más alto se encuentra en la previsión a 4 años vista y no en la de 5 años vista. 
+
+
+# 6 Comparación del modelo ARIMA con el modelo de de alisado exponencial. 
+
+Primero se estimará el modelo de alisado exponencial mediante la función ets, con los argumentos por defecto
+
+```{r}
+ets.austria <- ets(AustriaTanual)
+ets.austria
+```
+
+El modelo de alisado exponencial obtenido es ETS(M, Ad, N). La tabla 3 y 4 comparan ambos modelos, mediante criterios de calidad intra muestral y extra muestral respectivamente.
+```{r, echo = FALSE}
+tabla1 <- data.frame(Modelo = c("ETS(M, Ad, N)", "ARIMA(0,1,0) + d2009"))
+tabla1 <- cbind(tabla1, rbind(accuracy(ets.austria), accuracy(arima010)))
+kable_styling(kbl(tabla1, caption = "Valoración del ajuste intramuestral"), html_font = "Cambria", latex_options = "HOLD_position", font_size = 7)
+```
+
+
+```{r, echo = FALSE}
+k <- 10                
+h <- 5                   
+TT <- length(AustriaTanual)
+s <- TT - k - h           
+
+mapeEts <- matrix(NA, s + 1, h)
+for (i in 0:s) {
+  train.set <- subset(AustriaTanual, start = i + 1, end = i + k)
+  test.set <-  subset(AustriaTanual, start = i + k + 1, end = i + k + h)
+  
+  fit <- ets(train.set,  model = "MAN", damped = FALSE)
+  fcast <- forecast(fit, h = h)
+  mapeEts[i + 1,] <- 100*abs(test.set - fcast$mean)/test.set
+}
+
+mapeEts <- colMeans(mapeEts)
+#round(mapeEts, 2)
+
+tabla1 <- data.frame()
+tabla1 <- data.frame(Modelo = c("ETS(M, Ad, N)", "ARIMA(0,1,0) + d2009"))
+mapes <- rbind(mapeEts, mapeArima)
+colnames(mapes) <- c("Año 1", "Año 2", "Año 3", "Año 4", "Año 5")
+tabla1 <- cbind(tabla1, mapes)
+kable_styling(kbl(tabla1, caption = "Valoración del ajuste extramuestral mediante MAPE"), html_font = "Cambria", latex_options = "HOLD_position")
+
+```
+
+Si se observa la tabla 3 se verá como el modelo de alisado exponencial ofrecido por la función ETS(M, Ad, N), es inferior en terminos de ajuste intra muestral. Siendo esta inferioridad aparente si se atiende al ME, que es de 166.57 para el modelo ets mientras que este es de 1.93 para el modelo ARIMA(0, 1, 0). De forma contradictoria, esta valoración se invierte si atendemos a la tabla 4 que muestra el ajuste extra muestral, el modelo ETS(M, Ad, N) es superior en términos de MAPE al modelo ARIMA(0, 1, 0). Puesto que ambos modelos son dependientes de una función genérica que busca el mejor modelo según su criterio interno, estos resultados no implican que los modelos ARIMA sean mejor en términos de inferencia y los ETS de cara a predicción. 
+
+# 7 Información adicional
+
+El archivo .rmd usado para crear este PDF puede ser encontrado en mi  [GitHub](https://github.com/JuanCanteroJimenez/Master-Biostatistic/blob/main/Series-temporales/practica4/Practica-4.Rmd)  (https://github.com/JuanCanteroJimenez/Master-Biostatistic/blob/main/Series-temporales/practica4/Practica-4.Rmd)
