@@ -1,0 +1,101 @@
+---
+title: "Colección de problemas"
+author: "Juan Cantero Jimenez"
+date: "5/3/2022"
+output: pdf_document
+---
+
+# 1 
+Los datos de la siguiente tabla describen los patrones de comportamiento en el consumo de drogas psico-
+trópicas en una muestra de individuos del oeste de Londres (Everitt y Dunn, 1984)
+
+```{r, echo=FALSE}
+data1 <- data.frame(Sexo=as.factor(c(rep("Hombre", 4), rep("Mujer", 4))),
+                   Edad = as.factor(c(rep(c("16-29", "30-44", "45-64", "65-74"), 2))),
+                   Usa = c(21, 32, 70, 43, 46, 89, 169, 51),
+                   No.usa = c(683, 596, 705, 295, 783, 700, 847, 196))
+kableExtra::kable_styling(kableExtra::kbl(data1), latex_options = "HOLD_position")
+```
+
+
+## a) Identifica las variables respuesta y explicativas, la distribución de la respuesta y el parámetro de
+interés. Justifica la elección del link que vas a utilizar
+
+-Variable respuesta: Usa
+
+-Variable explicativa: Edad y Sexo
+
+-Distribución de la respuesta: binomial, número de exitos en una serie de pruebas independientes
+
+-Link: se usará la transformación logit pues su interpretación es más directa. 
+
+## b) ¿La edad influye igual en hombres y en mujeres? ¿Hay diferencias por `sexo' en el consumo de drogas?
+¿Cómo influye la `edad' para explicar el consumo de psicotrópicos? ¿Detectas un efecto cuadrático
+de la edad para explicar el consumo de drogas?
+
+```{r}
+data1$Total <- data1$No.usa + data1$Usa
+aj1 <- glm(cbind(Usa, Total) ~ Sexo + Edad, data=data1, family = binomial(link="logit"))
+pchisq(aj1$deviance, df = aj1$df.residual,lower.tail = F)
+shapiro.test(residuals(aj1, type = "deviance"))
+#summary(aj1)
+aj2 <- glm(cbind(Usa, Total) ~ Sexo * Edad, data=data1, family = binomial(link="logit"))
+#summary(aj2)
+anova(aj1, aj2, test="Chi")
+```
+
+```{r}
+coefficients(aj1)
+```
+
+
+Que la edad influya de distinta forma en hombres y en mujeres implica que su interacción sea relevante, como se puede observar en el Test Chi realizado sobre los residuos, no se descarta la hipótesis nula de equivalencia en los modelos. Así la interacción no es relevante y la edad influye de igual forma en hombres y mujeres. Las probabilidades de encontrar una mujer que consume drogas psicotrópicas es exp(-0.628) veces más que un hombre. A más edad, más consumo de drogas. No la edad no tiene una relación cuadrática con el consumo de drogas. Vease figura 1 y 2
+
+
+```{r}
+par(mfrow=c(1,2))
+plot(data1$Edad[1:4], (data1$Usa/data1$No.usa)[1:4], main="Figura 1: Tasa consumo drogas vs Edad en hombres", cex.main=0.6, ylim=c(0, 0.5))
+plot(data1$Edad[5:8], (data1$Usa/data1$No.usa)[5:8], main="Figura 2: Tasa consumo drogas vs Edad en mujeres", cex.main=0.6, ylim=c(0, 0.5))
+```
+## c) Obtén la expresión y el valor de las predicciones sobre el consumo de drogas en hombres y mujeres
+de 17 y 52 años con el modelo ajustado.
+
+El modelo final será:
+
+\begin{gather*}
+log(\frac{\pi_{ij}}{1-\pi{ij}}) = 3.51767 - 0.628 I(Sexo = Mujer) - 0.65869 I(Edad = 30-44)\\
+- 1.10082 I(Edad = 45-64) - 1.3780 I(Edad = 65 - 74)
+\end{gather*}
+
+Las predicciones pedidas son: 
+
+\begin{gather}
+-Hombre,\:17\:años: \frac{exp(-3.51767)}{1 + exp(-3.51767)} = 1-0.9711864 = 0.02881368\\
+-Hombre,\:52\:años: \frac{exp(-3.51767 + 1.10082)}{1 + exp(-3.51767 + 1.10082)} = 1-0.9181032 = 0.08189674 \\
+-Mujer,\:17\:años: \frac{exp(-3.51767 + 0.628)}{1 + exp(-3.51767 + 0.628)} = 1-0.947 =  0.05269724\\
+-Mujer,\:52\:años: \frac{exp(-3.51767 + 0.628 + 1.10082)}{1 + exp(-3.51767 + 0.628 + 1.10082)} = 1-0.8567862 = 0.14328882
+\end{gather}
+
+O de manera alternativa,
+
+```{r}
+predict(aj1, newdata = data.frame(Sexo=c("Hombre", "Hombre", "Mujer", "Mujer"),
+                                  Edad = c("16-29", "45-64", "16-29", "45-64")), type="response")
+```
+
+# 2
+En la siguiente tabla (Breslow y Day, 1980) se presentan los datos de un estudio clínico realizado con la
+finalidad de investigar el efecto del consumo del alcohol sobre la incidencia del cáncer de esófago (la ratio
+del número de individuos con cáncer entre el de individuos sin cáncer). Puesto que es común encontrar
+que la incidencia de cáncer aumenta con la edad, también este factor se controló en el estudio a través de
+una estratificación por edades.
+
+```{r}
+data2 <- data.frame(Edad=rep(c("25-34", "35-44","45-54","55-64","65-74","75-84"), each=2),
+                    Alcohol = rep(c("80+", "80-"), 6),
+                    Cancer = c(1,1,4,5,25,21,42,34,19,36,5,8),
+                    No.cancer = c(9, 106, 26, 164, 29, 138, 27, 139, 18, 88, 1, 31))
+kableExtra::kable_styling(kableExtra::kbl(data2), latex_options = "HOLD_position")
+
+```
+
