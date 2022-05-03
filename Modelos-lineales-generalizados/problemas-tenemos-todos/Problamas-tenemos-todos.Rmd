@@ -5,9 +5,9 @@ date: "5/3/2022"
 output: pdf_document
 ---
 
-# 1 
-Los datos de la siguiente tabla describen los patrones de comportamiento en el consumo de drogas psico-
-trópicas en una muestra de individuos del oeste de Londres (Everitt y Dunn, 1984)
+# Problemas
+
+## 1 Los datos de la siguiente tabla describen los patrones de comportamiento en el consumo de drogas psicotrópicas en una muestra de individuos del oeste de Londres (Everitt y Dunn, 1984)
 
 ```{r, echo=FALSE}
 data1 <- data.frame(Sexo=as.factor(c(rep("Hombre", 4), rep("Mujer", 4))),
@@ -18,7 +18,7 @@ kableExtra::kable_styling(kableExtra::kbl(data1), latex_options = "HOLD_position
 ```
 
 
-## a) Identifica las variables respuesta y explicativas, la distribución de la respuesta y el parámetro de
+### a)  Identifica las variables respuesta y explicativas, la distribución de la respuesta y el parámetro de
 interés. Justifica la elección del link que vas a utilizar
 
 -Variable respuesta: Usa
@@ -29,7 +29,7 @@ interés. Justifica la elección del link que vas a utilizar
 
 -Link: se usará la transformación logit pues su interpretación es más directa. 
 
-## b) ¿La edad influye igual en hombres y en mujeres? ¿Hay diferencias por `sexo' en el consumo de drogas?
+### b)  ¿La edad influye igual en hombres y en mujeres? ¿Hay diferencias por `sexo' en el consumo de drogas?
 ¿Cómo influye la `edad' para explicar el consumo de psicotrópicos? ¿Detectas un efecto cuadrático
 de la edad para explicar el consumo de drogas?
 
@@ -57,7 +57,8 @@ par(mfrow=c(1,2))
 plot(data1$Edad[1:4], (data1$Usa/data1$No.usa)[1:4], main="Figura 1: Tasa consumo drogas vs Edad en hombres", cex.main=0.6, ylim=c(0, 0.5))
 plot(data1$Edad[5:8], (data1$Usa/data1$No.usa)[5:8], main="Figura 2: Tasa consumo drogas vs Edad en mujeres", cex.main=0.6, ylim=c(0, 0.5))
 ```
-## c) Obtén la expresión y el valor de las predicciones sobre el consumo de drogas en hombres y mujeres
+
+### c) Obtén la expresión y el valor de las predicciones sobre el consumo de drogas en hombres y mujeres
 de 17 y 52 años con el modelo ajustado.
 
 El modelo final será:
@@ -83,12 +84,7 @@ predict(aj1, newdata = data.frame(Sexo=c("Hombre", "Hombre", "Mujer", "Mujer"),
                                   Edad = c("16-29", "45-64", "16-29", "45-64")), type="response")
 ```
 
-# 2
-En la siguiente tabla (Breslow y Day, 1980) se presentan los datos de un estudio clínico realizado con la
-finalidad de investigar el efecto del consumo del alcohol sobre la incidencia del cáncer de esófago (la ratio
-del número de individuos con cáncer entre el de individuos sin cáncer). Puesto que es común encontrar
-que la incidencia de cáncer aumenta con la edad, también este factor se controló en el estudio a través de
-una estratificación por edades.
+## 2 En la siguiente tabla (Breslow y Day, 1980) se presentan los datos de un estudio clínico realizado con la finalidad de investigar el efecto del consumo del alcohol sobre la incidencia del cáncer de esófago (la ratio del número de individuos con cáncer entre el de individuos sin cáncer). Puesto que es común encontrar que la incidencia de cáncer aumenta con la edad, también este factor se controló en el estudio a través de una estratificación por edades.
 
 ```{r}
 data2 <- data.frame(Edad=rep(c("25-34", "35-44","45-54","55-64","65-74","75-84"), each=2),
@@ -98,4 +94,102 @@ data2 <- data.frame(Edad=rep(c("25-34", "35-44","45-54","55-64","65-74","75-84")
 kableExtra::kable_styling(kableExtra::kbl(data2), latex_options = "HOLD_position")
 
 ```
+
+### a)Representa el logaritmo de la ratio de la incidencia versus la edad, para los dos niveles de consumo
+de alcohol considerados (alto, 80+; bajo, 80-)
+
+```{r}
+library(ggplot2)
+agg80p <- aggregate( log(Cancer / (No.cancer + Cancer)) ~ Edad, data=data2[data2$Alcohol == "80+",], sum)
+agg80m <- aggregate( log(Cancer / (No.cancer + Cancer)) ~ Edad, data=data2[data2$Alcohol == "80-",], sum)
+agg <- rbind(agg80p, agg80m)
+agg$grupo <- c( rep ("80+", 6), rep( "80-", 6))
+names(agg)[names(agg) == 'log(Cancer/(No.cancer + Cancer))'] <- 'log.RI'
+ggplot(agg, aes(x = Edad, y = log.RI)) + geom_point() + facet_grid(cols = vars(grupo))
+
+agg$log.RIsq <- agg$log.RI^2
+ggplot(agg, aes(x = Edad, y = log.RIsq)) + geom_point() + facet_grid(cols = vars(grupo))
+
+agg$log.RIpo2 <- agg$log.RI+agg$log.RI^2
+ggplot(agg, aes(x = Edad, y = log.RIpo2)) + geom_point() + facet_grid(cols = vars(grupo))
+
+agg$log.RIpo3 <- agg$log.RI+agg$log.RI^2+agg$log.RI^3
+ggplot(agg, aes(x = Edad, y = log.RIpo3)) + geom_point() + facet_grid(cols = vars(grupo))
+
+agg$RI <- exp(agg$log.RI)
+
+agg$logit.RI <- log(agg$RI/(1-agg$log.RI))
+ggplot(agg, aes(x = Edad, y = logit.RI)) + geom_point() + facet_grid(cols = vars(grupo))
+
+ggplot(agg, aes(x = Edad, y = RI)) + geom_point() + facet_grid(cols = vars(grupo))
+
+```
+
+### b) Identifica la variable respuesta y las variables explicativas. Especifica su tipo.
+
+-Variable respuesta: Cancer, cuantitativa discreta
+-Variables explicativas: Edad, categórica ordinal; Alcohol, categórica nominal. 
+
+### c) Asumiendo fijos los totales marginales muestrales correspondientes a los factores edad y consumo de
+alcohol, ¿cuál es la distribución que se puede asumir para la variable respuesta? ¿Y el parámetro de
+interés?
+
+Puesto que el problema se puede reducir al interes en el número de exitos/fracasos dentro de una serie de pruebas independientes, se podrá modelizar mediante una distribución binomial, $Cancer_{i} \sim Bi(\pi_{i}, n_{i})$, estamos interesados en el parámetro $\pi$. Se utiliza el link logit por su facilidad de interpretación. 
+
+### d) El cáncer de esófago, ¾guarda alguna relación con la edad y con el consumo de alcohol? El efecto del
+alcohol sobre la incidencia del cáncer, ¾es similar en todas las edades?
+
+```{r}
+data2$Total <- data2$Cancer+data2$No.cancer
+aj1 <- glm(cbind(Cancer, Total) ~ Edad + Alcohol, data2, family = binomial(link="logit"))
+summary(aj1)
+aj2 <- glm(cbind(Cancer, Total) ~ Edad * Alcohol, data2, family = binomial(link="logit"))
+summary(aj2)
+anova(aj1, aj2, test = "Chi")
+```  
+
+Si, guarda una fuerte relación con la edad y el consumo de alcohol como se puede ver por la significatividad de las variables en el modelo aj1. No, puesto que no existe evidencia suficiente como para descartar la hipótesis nula de modelos equivalentes, lo que indica que la interacción Edad y Alcohol no es capaz de explicar la variación en los datos. 
+
+### e) Comenta el ajuste obtenido utilizando los residuos.
+
+```{r}
+par(mfrow=c(2,2))
+plot(aj1)
+```
+
+Si se observa el panel Residual vs Fitted se podra ver como existe una cierta tendencia en los residuos, aunque ligera y cercana a los extremos. En el qqplot no se puede apreciar una desviación de la normalidad, algo que tambien se puede comprobar mediante un test Shapiro-Wilks sobre los residuos Deviance,
+
+```{r}
+shapiro.test(residuals(aj1, type="deviance"))
+```
+no se descarta la hipótesis nula de normalidad. En el panel de scale vs location se puede apreciar una ligera tendencia decreciente. Por último, si se observa el plot Residual vs Leverage, se podrá ver que las observaciones 10, 2 y 9 son influyentes en el modelo. Estas observaciones son:
+
+```{r}
+data2[c(10, 2, 9),]
+```
+
+La observación 2 ejemplifica la baja incidencia de cancer de esófago en jovenes no consumidores de Alcohol, mientras que las observaciones 10 y 9 resaltan la gran diferencia entre el consumo o no de alcohol. 
+
+### f) Calcula las predicciones para la incidencia del cáncer de esófago en cada grupo de edad y en función
+de si el individuo consume mucho o poco alcohol.
+
+```{r}
+data.frame(Predict=predict(aj1, newdata = data.frame(Edad=agg$Edad, Alcohol=agg$grupo), type = "response"), Edad=agg$Edad, Alcohol=agg$grupo )
+```
+
+## 3 El fichero dat.csv contiene información sobre 200 granjas de ganado vacuno de Galicia en las cuales se analizó la presencia o ausencia de un parásito (fasciola hepática). El fichero también contiene un conjunto de variables observadas en esas granjas, concretamente, la aptitud de las vacas (carne o leche), la temperatura media anual de la granja, la edad media de la vacas analizadas en la granja y la permeabilidad del suelo (1 indicando baja, 2 media y 3 alta).
+
+
+```{r}
+data3 <- read.csv("dat.csv", header = T)
+data3 <- data3[,2:6]
+colnames(data3) <- c("InfFasc", "Aptitud","Permeabilidad", "Temperatura", "Edad")
+str(data3)
+data3$Aptitud <- as.factor(substr(data3$Aptitud, 4, 4))
+hist(data3$Temperatura)
+hist(data3$Edad)
+# Se prueba tambien discretizando temperatura y edad así como agrupando los datos
+
+```
+
 
