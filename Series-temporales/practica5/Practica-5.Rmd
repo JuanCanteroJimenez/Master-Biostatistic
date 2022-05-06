@@ -1,0 +1,413 @@
+---
+title: "Práctica 5"
+author: "Juan Cantero Jimenez"
+date: "5/6/2022"
+output: pdf_document
+---
+
+# 1. Introducción
+
+En este trabajo se aplicará la metodología de Box y Jenkins al conjunto de datos AustriaT, que contiene los datos de las exportaciones totales en millones de euros de Austria hacia la unión europea en el periodo que transcurre desde 1999 hasta 2020 de forma mensual obtenidos de la oficina estadística de la Unión Europea (Eurostat).
+
+```{r, echo = FALSE, message=FALSE}
+library(forecast)
+library(ggplot2)
+library(aod)
+library(kableExtra)
+library(seasonal)
+
+AustriaT <- read.csv2("AustriaT.csv")
+AustriaT <- ts(AustriaT, start = c(1999, 1), frequency = 12)
+
+```
+
+# 2. Indefiticación del modelo ARIMA
+
+Se partirá de los resultados expuestos en la práctica 3, en los cuales se identífica las transformaciones necesarias de AustriaT para que sea estacionaria y ergódica. Este proceso arroja que la serie AustriaT requiere de dos diferenciaciones, una de ellas estacionaria, y de aplicar el logaritmo para cumplir las condiciones anteriores. La Figura 1 muestra la serie AustriaT así como su función de autocorrelación, FAC, y la diferenciación de esta junto con su FAC. 
+
+```{r, fig.height=4, fig.width=12, warning=FALSE, echo=FALSE}
+gridExtra::grid.arrange(
+autoplot(AustriaT, xlab = "", ylab = "", main = "Figura 1: Exportaciones Austria (millones euros)"),
+autoplot(diff(diff(log(AustriaT)), lag = 12), xlab = "", ylab = "", main = ""),
+ggAcf(AustriaT, xlab = "", ylab = "FAC", main = ""),
+ggAcf(diff(diff(log(AustriaT)), lag = 12), xlab = "", ylab = "FAC", main = ""),
+nrow=2
+)
+``` 
+
+Si se atiende a la figura 1 se verá como para la serie transformada como se indico anteriormente, panel superior derecha, la serie es estacionaria. Si se atiende a su FAC, panel inferior derecho, existen autocorrelaciones por encima del intervalo de confianza 95 % de la distribución de estos. Aunque la ergodicidad no es perfecta, se ha decido no transformar más la serie en busca de no dificultar aun más si cabe la interpretación de los datos, recuerdese que la serie ya se ha diferenciado dos veces, una estacional, y se le ha aplicado el logaritmo. En este "nivel" de transformación la serie carece de interpretabilidad relevante pues se trataria de la diferencia de una tasa de variación anual. Puesto que la interpretación de las autocorrelaciones requieren de experiencia, se utilizarán las funciones auto.arima y seas, para identificar el modelo ARIMA estacional.  
+
+Antes de entrar en materia con las funciones identificadoras del modelo ARIMA, es conveniente realizar una análisis previo de las intervenciones basándonos en las características de la serie en estudio. La serie AustriaT recoge información sobre las exportaciones totales de Austria hacia la unión Europea mensualmente. Estas exportaciones son resultados de los bienes producidos por los trabajadores que forma el tejido productivo de Austria, asi, es razonable asumir que esta estará influenciada por los días laborales en cada mes. La función forecast::bizdays ofrece este tipo de datos, pero solo para ciertas regiones, entre las que no se encuntra Austria. En consecuencia, los dias laborales por mes se obtendrán realizando "Web-scraping" de la pagina (https://calendar.zoznam.sk) que ofrece esta información. Además, se ha optado por estandarizar los dias laborales en función de los dias del mes. La información descrita se almacenará en la variable work.rate
+
+```{r}
+
+library(rvest)
+library(lubridate) 
+lab.days <- c()
+for (x in (-1:20)+2000){
+page<-read_html(paste("https://calendar.zoznam.sk/worktime-enat.php?hy=", as.character(x),"&x=0&y=0", sep=""))
+table <- as.data.frame(html_table(page)[[2]])
+table.fil <- unique(table[2:nrow(table),c(1,11)])
+lab.days <- c(lab.days,sapply(table.fil$Month.1, FUN = function(x) as.numeric(substr(x, 1,2))))
+}
+st <- as.Date("1999-01-01")
+en <- as.Date("2020-12-01")
+ll <- seq(st, en, by = "+1 month")
+t<-days_in_month(ll)
+work.rate<-lab.days/t
+Sys.sleep(3)
+```
+
+Fruto de las indagaciones realizadas en prácticas pasadas, tambien se hace patente que los años 2009 y 2020 poseen una fuerte intervención provocadas por la crisis bursatil de 2008 y la pandemia de Sars-Cov-2 de 2020. Pero, dado que al trabajar con una serie mensual tambien se debe de indicar el mes, y este resulta más complejo de identificar, por ahora no se añadirán dichas intervenciones. 
+
+Así la identificación con la función auto.arima toma la forma:
+
+```{r}
+res1<-auto.arima(AustriaT,
+           d=1,
+           D=1,
+           lambda = 0,
+           xreg=cbind(work.rate))
+summary(res1)
+```
+El modelo optimo encontrado por la función auto.arima arroja un ARIMA(1,1,1)(1,1,2)12. Se puede apreciar como los coeficientes ar1, sar1 y sma1 no son significativos, atendiendo al criterio de que el valor del coeficiente sea superio a dos vece su error estandar. Si se atiende ahora a los residuos. 
+
+```{r, fig.height=4, fig.width=12}
+error <- residuals(res1)
+sderror <- sd(error)
+autoplot(error, series="Error",
+         colour = "black",
+         xlab = "",
+         ylab = "Error",
+         main = "Figura 2. Error + Intervención") +
+  geom_hline(yintercept = c(-3, -2.5,2.5, 3)*sderror, 
+             colour = c("red", "green", "green", "red"), 
+             lty = 2) + 
+  scale_x_continuous(breaks= seq(2000, 2018, 2)) 
+
+year <- round(time(AustriaT)[abs(error) >= sd(error)*2.5])
+month <-cycle(AustriaT)[abs(error) >= sd(error)*2.5]
+error.i <- error[abs(error) >= sd(error)*2.5]
+```
+
+Si se fija el criterio de intervención en 2.5 veces la desviación típica del error, se encuntran siete candidatos a intervención, estos se pueden ver en la tabla 1. 
+
+```{r}
+inter <- data.frame(Año = as.character(year), Mes = as.character(month), Error= round(error.i , 4))
+kable_styling(kbl(t(inter), caption = "Intervenciones"), html_font = "Cambria", latex_options = "HOLD_position")
+```
+
+
+
+
+Antes de probar una segunda vez, se atenderá al resultado de la funcion seasonal::seas:
+
+```{r}
+summary(seas(AustriaT))
+```
+En este caso podemos ver como el modelo devuelto es ARIMA(0,1,1)(0,1,1)12. Se podría decir que el resultado de la función seas concuerda ligeramente con lo obtenido con la función forecast::auto.arima debido a que los coeficientes ar1 y sar1 han sido eliminados por la primera, mientras que la segunda los mantiene aunque sean no significativos. Tambien es interesante apreciar como el término sma2 ha sido eliminado en la función seas aunque en el resultado aportado por auto.arima este era significativo y sma1 no. Si se presta atención a las intervenciones propuestas por seas, tres de estas coinciden con las mostradas en la tabla 1 (Enero 2017, Abril 2020, Junio 2020). Tambien se encuntra la intervención Diciembre 2018, que no ha sido identificada en la tabla 1. Por ultimo, hacer referencia a que seas tambien encuentra un efecto Semana Santa, que puede quedar recogido en la variable work.ratio. A la luz de estos resultados, se probará con el modelo propuesto por la función seas y todas las intervenciones propuestas en la tabla 1. 
+
+```{r}
+
+inter <- rbind(inter,c(2008, 12, 0))
+
+intervenciones <- c()
+nombres <- c()
+for (x in 1:nrow(inter)){
+ intervenciones <- cbind(intervenciones, 1*(cycle(AustriaT) == inter$Mes[x] & trunc(time(AustriaT)) == inter$Año[x]))
+ nombres <- c(nombres, paste(as.character(inter$Mes[x]), as.character(inter$Año[x]), sep="."))
+}
+colnames(intervenciones) <- nombres
+```
+
+
+```{r, fig.height=4, fig.width=12}
+res2<- Arima(AustriaT,
+           order=c(0,1,1),
+           seasonal=c(0,1,1),
+           lambda = 0,
+           xreg=cbind(work.rate, intervenciones))
+summary(res2)
+error <- residuals(res2)
+sderror <- sd(error)
+autoplot(error, series="Error",
+         colour = "black",
+         xlab = "",
+         ylab = "Error",
+         main = "Figura 3. Error + Intervención") +
+  geom_hline(yintercept = c(-3, -2.5,2.5, 3)*sderror, 
+             colour = c("red", "green", "green", "red"), 
+             lty = 2) + 
+  scale_x_continuous(breaks= seq(2000, 2018, 2)) 
+
+year2 <- round(time(AustriaT)[abs(error) >= sd(error)*3])
+month2 <-cycle(AustriaT)[abs(error) >= sd(error)*3]
+error.i2 <- error[abs(error) >= sd(error)*3]
+```
+
+En esta segunda ronda de refinamiento, se podrá apreciar como varias de las intervenciones introducidas son no significativas: Octubre 2009, Noviembre 2009, Diciembre 2009, Diciembre 2008 y Junio 2020. Puesto que se sabe que dada la crisis bursatil de 2008, la economia se comporto de forma anomala, las intervenciones que afecten a los años 2008 y 2009 no se retiraran aunque aparezcan como no significativas. Lo mismo se aplica para la intervención de Junio 2020 y la pandemia de Sars-Cov-2. Además se añadirán las intervenciones anomalas encontradas en la figura 3, pero esta vez escogiendo un criterio para considerarla anomala de tres desviaciones típicas, en orden de no sobrecargar el modelo más. Las intervenciones Enero 2017, Diciembre 2007, Octubre 2009 y Noviembre 2009 siguen apareciendo aun estar indicadas como intervención, así solo se debe de añadir Mayo 2020. El modelo con las modificaciones propuestas, cumple con los requisitos para ser definitivo y se describirá en el siguiente apartado. 
+
+```{r, echo=FALSE, include = FALSE}
+
+inter <- rbind(inter, c(2020, 5, 0))
+intervenciones <- c()
+nombres <- c()
+for (x in 1:nrow(inter)){
+ intervenciones <- cbind(intervenciones, 1*(cycle(AustriaT) == inter$Mes[x] & trunc(time(AustriaT)) == inter$Año[x]))
+ nombres <- c(nombres, paste(as.character(inter$Mes[x]), as.character(inter$Año[x]), sep="."))
+}
+colnames(intervenciones) <- nombres
+```
+
+```{r, echo = FALSE, include = FALSE}
+res3<- Arima(AustriaT,
+           order=c(0,1,1),
+           seasonal=c(0,1,1),
+           lambda = 0,
+           xreg=cbind(work.rate, intervenciones))
+summary(res3)
+error <- residuals(res3)
+sderror <- sd(error)
+autoplot(error, series="Error",
+         colour = "black",
+         xlab = "",
+         ylab = "Error",
+         main = "Figura 2. Error + Intervención") +
+  geom_hline(yintercept = c(-3, -2.5,2.5, 3)*sderror, 
+             colour = c("red", "green", "green", "red"), 
+             lty = 2) + 
+  scale_x_continuous(breaks= seq(2000, 2020, 2)) 
+
+```
+
+# 3. Estimación del modelo definitivo
+
+Los coeficientes del modelo pueden ser obtenidos con la función Arima.
+
+```{r}
+arima011 <- Arima(AustriaT, 
+                  order =c(0,1,1),
+                  seasonal=c(0,1,1),
+                  lambda = 0,
+                  xreg = cbind(intervenciones, work.rate))
+arima011
+```
+Además se puede comprobar si las variables son significativas de una forma más exhaustiva mediantes el test de Wald. 
+
+```{r}
+ancho <- max(nchar(names(coef(arima011)))) + 2
+for(i in 1:length(coef(arima011))) {
+  wt <- wald.test(b = coef(arima011), 
+                  Sigma = vcov(arima011), 
+                  Terms = i)
+  cat("\nCoeficiente: ", format(names(coef(arima011))[i], width = ancho), "valor de p: ", 
+      formatC(wt$result$chi2[3], digits = 4, format = "f"))
+}
+```
+Los términos de intervención referentes a Octubre 2009, Noviembre 2009 y Diciembre 2008 no son significativos al 5%, Febrero 2009 es significativo al 10% y los demas términos son significativos al 5%. 
+
+Así el modelo obtenido haciendo uso de la función seas y auto.arima es:
+
+\begin{gather}
+AustriaTanual_{t} \sim ARIMA(0,1,1)(0,1,1)12 + Intervenciones + work.rate \\
+AustriaT_{t} = AustriaT_{t-1} + (AustriaT_{t-12} - AustriaT_{t-13}) + \theta_{1}\epsilon_{t-1} + \theta_{12}\epsilon_{t-12} + \theta_{1}\theta_{12}\epsilon_{t-13} + \epsilon_{t} + Inter + Work.rate
+\end{gather}
+
+Este modelo se corresponde con el modelo de las aerolíneas, conocido así por ser el modelo subyacente de muchas series temporales de transporte de pasajeros. Las intervenciones usadas en el modelo definitivo se puede apreciar en la tabla 2. Vagamente, la cantidad millones de euros de las exportaciones del mes t en Austria, son las mismas que el del mes previo t-1, mas la diferencia entre estos meses observada el año pasado.  
+
+```{r}
+kable_styling(kbl(t(inter[,c(1,2)]), caption = "Intervenciones en el modelo definitivo"), html_font = "Cambria", latex_options = "HOLD_position")
+
+```
+
+# 4. Validación del modelo. 
+
+La validación del modelo propuesto anteriormente pasa por la comprobación de que su residuo sea ruido blanco, dicho de otra forma esto implica que la media sea cero $E[\epsilon_{t}] = 0$, la varianza sea constante (homocedásticidad) $E[\epsilon^{2}_{t}] = \sigma^{2}$, sea incorrelado $E[\epsilon_{t} * \epsilon_{s}] = 0\: t \neq s$ y que siga una distribución normal $\epsilon_{t} \sim N$.
+
+## 4.1 Media cero.
+
+No existe ninguna forma adecuada de contrastar que la media sea cero. Sin embargo, se puede atender al error medio que es -15.92, bastante bajo si se compara con el valor medio de la serie. El error porcentual medio es del 2.30 % también bajo. Esto sugiere que la media de los residuos sea cercana a cero. En general si se sopesa tambien el valor del error porcentual medio (-0.26), que al ser cercano a 0 indica carencia de sesgo; la raiz del error cuadrático medio y el error absoluto medio (212.29 y 154.99)
+son inferiores a la media de la serie lo que indica un buen ajuste; el error escalado absoluto medio (0.30) indica que el método usado es mejor que un método inocente; y el ACF1 (0.0102) que al ser cercano a 0 indica poca capacidad de mejora. Así se puede concluir que el ajuste del modelo es bueno. 
+
+```{r}
+accuracy(arima011)
+```
+
+## 4.2 Incorrelación
+
+La hipotesis nula de incorrelación puede ser contrastada mediante el test de Box-Ljung
+
+```{r}
+error <- residuals(arima011)
+Box.test(error, lag = 2,type = "Ljung-Box")
+```
+Puesto que el valor de p es mayor que el nivel de significación 0.05 no se rechaza la hipótesis nula de incorrelación. La elección del parámetro argumento lag, que indica el número de retardos en la prueba, es arbitraria y conviene probar con distintos valores de esta. El resultado para el test de Box-Ljung con distintos retardos se muestra en la tabla 3. Si se observa esta, se verá que no se descarta la hipótesis de incorrelación para los distintos valores de lag. 
+
+```{r, echo = FALSE}
+max_lag = 9
+tabla1 <- data.frame(Lag = 1:max_lag, valor.de.p = sapply(1:max_lag, function(x) Box.test(error, lag=x, type="Ljung-Box")$p.value))
+
+kable_styling(kbl(t(tabla1), caption = "Hipotesis de incorrelación bajo distintos valores de lag"), html_font = "Cambria", latex_options = "HOLD_position")
+
+```
+
+## 4.3  Homocedasticidad (varianza constante).
+
+La hipótesis de homocedasticidad de los residuos puede ser comprobada mediante el test de Box-Ljung sobre los residuos al cuadrado. 
+
+```{r}
+Box.test(error^2, lag = 2, type = "Ljung-Box")
+```
+
+Dado que el valor de p es 1.244e-06 muy inferior al nivel de significatividad 0.05 se rechaza la hipótesis nula de homocedasticidad. De nuevo este test sufre de la arbitrariedad en la selección del parámetro lag. En la tabla 4 se muestran los resultados del mismo test para distintos valores de lag. Se puede observar que la hipótesis nula se descarta para los distintos valores ensayados, aunque es interesante comentar como al aumentar el lag, este valor de p tambien aumenta. Así el modelo es totalmente heterocedástico. 
+
+```{r, echo = FALSE}
+max_lag = 15
+tabla1 <- data.frame(Lag = as.character(1:max_lag), valor.de.p = round(sapply(1:max_lag, function(x) Box.test(error^2, lag=x, type="Ljung-Box")$p.value), 3))
+
+kable_styling(kbl(t(tabla1), caption = "Hipotesis homocedasticidad bajo distintos valores de lag"), html_font = "Cambria", latex_options = "HOLD_position")
+
+```
+## 4.4 Normalidad.
+
+La hipótesis nula de normalidad puede ser contrastada mediante un test de Jarque-Bera puesto que este test es más optimo para el número de observaciones que tiene la serie AustriT, n = 264. 
+
+```{r}
+tseries::jarque.bera.test(error)
+```
+
+Se descarta la hipótesis nula de normalidad de los residuos para un nivel de significatividad del 0.05. 
+
+## 4.5 Intervención.
+
+Por último, serán necesario comprobar que no existen errores atípicos, entendiendo a estos como residuos que sean mayores que tres desviaciones típicas del error. 
+
+```{r, fig.height=3, fig.width=12, echo=FALSE}
+sderror <- sd(error)
+
+autoplot(error, series="Error",
+         colour = "black",
+         xlab = "",
+         ylab = "Error",
+         main = "Figura 4. Error + Intervención") +
+  geom_hline(yintercept = c(-3, -2.5, 2.5, 3)*sderror, 
+             colour = c("red", "green", "green", "red"), 
+             lty = 2) + 
+  geom_point() +
+  scale_x_continuous(breaks= seq(1999, 2020, 2)) 
+```
+
+A destacar el residuo de Enero de 2007, Octubre 2009 y Noviembre 2009 que superán el criterio para ser considerado anómalos, estos valores atípicos pueden ser debido a la crisis bursátil de 2008.
+
+## 5 Previsión de la serie y evaluación de esta. 
+
+Para la predicción se utilizará el work.rate de los tres años anteriores al horizonte de predicción
+
+```{r}
+interven <- matrix(data = 0, nrow=36, ncol=9)
+colnames(interven) <- colnames(intervenciones)
+parima011 <- forecast(arima011, h = 36, level = 95, xreg=cbind(interven, work.rate[(264-35):264]))
+
+```
+```{r, fig.height=3, fig.width=12}
+autoplot(parima011, 
+         xlab = "", 
+         ylab = "Títulos",
+         main = "Figure 4. AustriaT (1999-2020) y predicción (2021-2023)") +
+  scale_x_continuous(breaks= seq(1993, 2023, 2)) 
+```
+
+Si se observa la figura 4, se verá como la predicción es similar a la de los meses anteriores pero creciente ligeramente. La incertidumbre en la predicción aumenta conforme nos alejamos del horizonte de predicción. 
+
+## 5.1 Validación de la predicción con origen de predicción móvil. 
+
+A continuación se evaluarán las predicciónes mediante origen de predicción móvil, se asume que se precisa de 10 años para estimar el modelo, y se fijara el horizonte temporal en un año. A estos valores se les calcula el MAPE, que para la predicción intra muestral era de 2.30 %. 
+
+```{r, echo=FALSE}
+k <- 120                   
+h <- 12                    
+T <- length(AustriaT)   
+s<-T - k - h               
+
+mapeArima <- matrix(NA, s + 1, h)
+
+X <- cbind(intervenciones, work.rate)
+
+for (i in 0:s) {
+  train.set <- subset(AustriaT, start = i + 1, end = i + k)
+  test.set <-  subset(AustriaT, start = i + k + 1, end = i + k + h) 
+  
+  X.train <- X[(i + 1):(i + k),]
+  hay <- colSums(X.train)
+  X.train <- X.train[, hay>0]
+  
+  X.test <- X[(i + k + 1):(i + k + h),]
+  X.test <- X.test[, hay>0]
+  
+  fit <- Arima(train.set, 
+               order = c(0, 1, 1),
+               seasonal = c(0, 1, 1),
+               lambda = 0,
+               xreg = X.train)
+  
+  fcast <- forecast(fit, h = h, xreg = X.test) 
+  
+  mapeArima[i + 1,] <- 100*abs(test.set - fcast$mean)/test.set
+}
+  
+errorArima <- colMeans(mapeArima)
+errorArima
+```
+
+De forma general el MAPE extra muestral aumenta conforme se aleja el horizonte de predicción. El MAPE extra muestral a un periodo vista es ligeramente superior al MAPE intra muestral, mientras que este para 12 periodos vista es el triple del intra muestral. En general esto indica una buena calidad en las predicciónes del modelo, lo que contrasta con la falta de validez del modelo pues los residuos no son normales y es heterocedástico. Así el modelo optenido es optimo de cara a las predicciones pero no si se desea hacer inferencia de cara a conocer el proceso generador de datos de la serie.  
+
+
+# 6 Comparación del modelo ARIMA con el modelo de de alisado exponencial. 
+
+El modelo de alisado exponencial optimo para la serie AustriaT usando la metodologia introducida en la practica 2, grid-search, es:
+
+```{r}
+ets.austria<-ets(AustriaT,model="ANA",lambda=0,damped=FALSE,biasadj=TRUE,opt.crit="amse",ic="aicc")
+```
+El modelo de alisado exponencial obtenido es ETS(A, N, A) con transformación logarítmica, con criterio de optimización AMSE y criterio de información AICC. La tabla 5 y 6 comparan ambos modelos, mediante criterios de calidad intra muestral y extra muestral respectivamente.
+
+```{r, echo=FALSE}
+tabla1 <- data.frame(Modelo = c("ETS(A, N, A)", "ARIMA(0,1,1)(0,1,1)12 + Inter + Work.rate"))
+tabla1 <- cbind(tabla1, rbind(accuracy(ets.austria), accuracy(arima011)))
+kable_styling(kbl(tabla1, caption = "Valoración del ajuste intramuestral"), html_font = "Cambria", latex_options = "HOLD_position", font_size = 5)
+```
+
+```{r, echo = FALSE}
+k <- 120                
+h <- 12                   
+TT <- length(AustriaT)
+s <- TT - k - h           
+
+mapeEts <- matrix(NA, s + 1, h)
+for (i in 0:s) {
+  train.set <- subset(AustriaT, start = i + 1, end = i + k)
+  test.set <-  subset(AustriaT, start = i + k + 1, end = i + k + h)
+  
+  fit <- ets(train.set,model="ANA",lambda=0,damped=FALSE,biasadj=TRUE,opt.crit="amse",ic="aicc")
+  fcast <- forecast(fit, h = h)
+  mapeEts[i + 1,] <- 100*abs(test.set - fcast$mean)/test.set
+}
+
+mapeEts <- colMeans(mapeEts)
+#round(mapeEts, 2)
+
+tabla1 <- data.frame()
+tabla1 <- data.frame(Modelo = c("ETS(A, N, A)", "ARIMA"))
+mapes <- rbind(mapeEts, errorArima)
+colnames(mapes) <- 1:12
+tabla1 <- cbind(tabla1, mapes)
+kable_styling(kbl(tabla1, caption = "Valoración del ajuste extramuestral mediante MAPE"), html_font = "Cambria", latex_options = "HOLD_position", font_size = 4)
+```
+
+Si se observan las tablas 5 y 6 se verá como el modelo ARIMA es generalmente superior tanto en términos de predicción intra muestral como extra muestral. El modelo ETS solamente es superior en las predicciones extra muestrales a partir del periodo 9 de predicción en las cuales mejora ligeramente el MAPE ofrecido por el modelo ARIMA. Aunque el modelo ARIMA parece superior, ha de recordarse que no es completamente valido debido a su falta de normalidad en los residuos y su heterocedasticidad, mientras que el modelo ETS no requiere del contraste de hipótesis de validación y es ligeramente superior en las predicciones extra muestrales más alejadas del horizonte de predicción. 
+
+
+# 7 Información adicional
+
+El archivo .rmd usado para crear este PDF puede ser encontrado en mi  [GitHub](https://github.com/JuanCanteroJimenez/Master-Biostatistic/blob/main/Series-temporales/practica5/Practica-5.Rmd)  (https://github.com/JuanCanteroJimenez/Master-Biostatistic/blob/main/Series-temporales/practica5/Practica-5.Rmd)
+
